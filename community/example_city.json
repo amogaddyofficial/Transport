@@ -1,0 +1,19 @@
+{
+    "id": "example_city",
+    "name": "Città Esempio",
+    "center": [
+        41.9028,
+        12.4964
+    ],
+    "zoom": 13,
+    "stations": [],
+    "customStations": [],
+    "customTracks": [],
+    "metroLines": [],
+    "busLines": [],
+    "tramLines": [],
+    "trainLines": [],
+    "vehicles": [],
+    "startTime": "2026-02-04T12:00:00.000Z",
+    "lastSaveTime": "2026-02-04T12:00:00.000Z"
+}

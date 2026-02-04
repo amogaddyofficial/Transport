@@ -249,15 +249,17 @@
             <h1>🧩 Mods & Playsets</h1>
 
             <!-- Add new mod section -->
+            <!-- Add new mod section -->
             <div class="input-group">
-                <label for="new-mod-name">➕ Aggiungi Nuova Mod / Add New Mod</label>
-                <input type="text" id="new-mod-name" placeholder="es. real_stations">
-                <small>Inserisci il nome della cartella dentro 'mods/' contenente il file <b>mod.js</b><br>
-                    Enter the folder name inside 'mods/' containing the <b>mod.js</b> file</small>
+                <label for="mod-file-upload">➕ Carica Mod (.js) / Upload Mod</label>
+                <input type="file" id="mod-file-upload" accept=".js"
+                    style="background: white; padding: 10px; border-radius: 10px; width: 100%;">
+                <small>Seleziona un file JavaScript (.js) per installarlo nel browser.<br>
+                    Select a JavaScript (.js) file to install securely in your browser.</small>
             </div>
 
-            <button class="save-button" onclick="addNewMod()" style="background: rgba(76, 175, 80, 0.6);">
-                ➕ Aggiungi / Add
+            <button class="save-button" onclick="addNewMod()" style="background: rgba(76, 175, 80, 0.6); width: 100%;">
+                📤 Carica e Installa Mod
             </button>
 
             <!-- Mods list -->
@@ -284,46 +286,71 @@
         </div>
     </div>
 
+    <script src="mods-db.js"></script>
     <script>
         // Mod Management System
-        let discoveredMods = JSON.parse(localStorage.getItem('discovered_mods') || '[]');
         let enabledMods = JSON.parse(localStorage.getItem('enabled_mods') || '[]');
 
         // Initialize on page load
-        renderModsList();
-        updateFolderStructure();
-
-        function addNewMod() {
-            const modName = document.getElementById('new-mod-name').value.trim();
-
-            if (!modName) {
-                showStatus('⚠️ Inserisci un nome per la mod / Enter a mod name', 'error');
-                return;
-            }
-
-            if (discoveredMods.includes(modName)) {
-                showStatus(`⚠️ La mod "${modName}" è già stata aggiunta`, 'error');
-                return;
-            }
-
-            // Add to discovered mods
-            discoveredMods.push(modName);
-            localStorage.setItem('discovered_mods', JSON.stringify(discoveredMods));
-
-            // Enable by default
-            enabledMods.push(modName);
-            localStorage.setItem('enabled_mods', JSON.stringify(enabledMods));
-
-            // Clear input
-            document.getElementById('new-mod-name').value = '';
-
-            // Update UI
-            renderModsList();
+        document.addEventListener('DOMContentLoaded', async () => {
+            await ModsDB.init();
+            await renderModsList();
             updateFolderStructure();
-            showStatus(`✅ Mod "${modName}" aggiunta e attivata!`, 'success');
+        });
+
+        async function addNewMod() {
+            const fileInput = document.getElementById('mod-file-upload');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                showStatus('⚠️ Seleziona un file .js da caricare / Select a .js file to upload', 'error');
+                return;
+            }
+
+            if (!file.name.endsWith('.js')) {
+                showStatus('⚠️ Il file deve essere un file JavaScript (.js) / File must be a JavaScript (.js) file', 'error');
+                return;
+            }
+
+            // Extract mod name from filename (remove .js)
+            const modName = file.name.replace('.js', '');
+
+            // Check if mod exists
+            const existingMod = await ModsDB.getMod(modName);
+            if (existingMod && !confirm(`⚠️ La mod "${modName}" esiste già. Vuoi sovrascriverla?`)) {
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = async function (e) {
+                const code = e.target.result;
+
+                try {
+                    await ModsDB.saveMod(modName, code);
+
+                    // Enable by default if new
+                    if (!enabledMods.includes(modName)) {
+                        enabledMods.push(modName);
+                        localStorage.setItem('enabled_mods', JSON.stringify(enabledMods));
+                    }
+
+                    // Clear input
+                    fileInput.value = '';
+
+                    // Update UI
+                    await renderModsList();
+                    updateFolderStructure();
+                    showStatus(`✅ Mod "${modName}" caricata e attivata!`, 'success');
+                } catch (error) {
+                    console.error(error);
+                    showStatus(`❌ Errore nel salvataggio della mod: ${error}`, 'error');
+                }
+            };
+
+            reader.readAsText(file);
         }
 
-        function toggleMod(modName) {
+        async function toggleMod(modName) {
             if (enabledMods.includes(modName)) {
                 // Disable
                 enabledMods = enabledMods.filter(m => m !== modName);
@@ -333,81 +360,92 @@
             }
 
             localStorage.setItem('enabled_mods', JSON.stringify(enabledMods));
-            renderModsList();
+            await renderModsList();
+            updateFolderStructure(); // Update to show status change
         }
 
-        function deleteMod(modName) {
-            if (!confirm(`Vuoi rimuovere la mod "${modName}" dalla lista?\n\nNOTA: Questo non elimina i file, rimuove solo la mod dalla lista gestita.`)) {
+        async function deleteMod(modName) {
+            if (!confirm(`Vuoi rimuovere la mod "${modName}"?\n\nLa mod verrà eliminata permanentemente dal browser.`)) {
                 return;
             }
 
-            // Remove from discovered and enabled
-            discoveredMods = discoveredMods.filter(m => m !== modName);
-            enabledMods = enabledMods.filter(m => m !== modName);
+            try {
+                await ModsDB.deleteMod(modName);
 
-            localStorage.setItem('discovered_mods', JSON.stringify(discoveredMods));
-            localStorage.setItem('enabled_mods', JSON.stringify(enabledMods));
+                // Remove from enabled list
+                enabledMods = enabledMods.filter(m => m !== modName);
+                localStorage.setItem('enabled_mods', JSON.stringify(enabledMods));
 
-            renderModsList();
-            updateFolderStructure();
-            showStatus(`🗑️ Mod "${modName}" rimossa dalla lista`, 'success');
+                await renderModsList();
+                updateFolderStructure();
+                showStatus(`🗑️ Mod "${modName}" eliminata`, 'success');
+            } catch (error) {
+                showStatus(`❌ Errore eliminazione: ${error}`, 'error');
+            }
         }
 
-        function renderModsList() {
+        async function renderModsList() {
             const container = document.getElementById('mods-list');
+            try {
+                const mods = await ModsDB.getAllMods();
 
-            if (discoveredMods.length === 0) {
-                container.innerHTML = '<div class="empty-state">📭 Nessuna mod aggiunta<br>Aggiungi una mod usando il campo sopra</div>';
-                return;
+                if (mods.length === 0) {
+                    container.innerHTML = '<div class="empty-state">📭 Nessuna mod installata<br>Carica un file .js usando il campo sopra</div>';
+                    return;
+                }
+
+                container.innerHTML = mods.map(mod => {
+                    const isEnabled = enabledMods.includes(mod.name);
+                    const sizeKB = (mod.size / 1024).toFixed(2);
+                    const date = new Date(mod.uploadedAt).toLocaleDateString();
+
+                    return `
+                        <div class="mod-item">
+                            <div class="mod-info">
+                                <div class="mod-name">🧩 ${mod.name}</div>
+                                <div class="mod-path">Ver: ${date} • Dim: ${sizeKB} KB</div>
+                            </div>
+                            <div style="display: flex; align-items: center;">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" ${isEnabled ? 'checked' : ''} onchange="toggleMod('${mod.name}')">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                                <button class="delete-button" onclick="deleteMod('${mod.name}')">🗑️</button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                // Return mods for other functions
+                return mods;
+            } catch (error) {
+                container.innerHTML = `<div class="status-error">Errore caricamento mod: ${error}</div>`;
+                return [];
             }
-
-            container.innerHTML = discoveredMods.map(modName => {
-                const isEnabled = enabledMods.includes(modName);
-                return `
-                    <div class="mod-item">
-                        <div class="mod-info">
-                            <div class="mod-name">🧩 ${modName}</div>
-                            <div class="mod-path">mods/${modName}/mod.js</div>
-                        </div>
-                        <div style="display: flex; align-items: center;">
-                            <label class="toggle-switch">
-                                <input type="checkbox" ${isEnabled ? 'checked' : ''} onchange="toggleMod('${modName}')">
-                                <span class="toggle-slider"></span>
-                            </label>
-                            <button class="delete-button" onclick="deleteMod('${modName}')">🗑️</button>
-                        </div>
-                    </div>
-                `;
-            }).join('');
         }
 
-        function updateFolderStructure() {
+        async function updateFolderStructure() {
             const container = document.getElementById('folder-structure');
+            const mods = await ModsDB.getAllMods();
 
-            if (discoveredMods.length === 0) {
-                container.textContent = `Transport/
-├── index.html
-├── mods/
-│   └── (nessuna mod aggiunta)
+            if (mods.length === 0) {
+                container.textContent = `Browser Storage (IndexedDB)/
+├── (nessuna mod installata)
 └── ...`;
                 return;
             }
 
-            let structure = `Transport/
-├── index.html
-├── mods/\n`;
+            let structure = `Browser Storage (IndexedDB)/\n`;
 
-            discoveredMods.forEach((modName, index) => {
-                const isLast = index === discoveredMods.length - 1;
-                const isEnabled = enabledMods.includes(modName);
+            mods.forEach((mod, index) => {
+                const isLast = index === mods.length - 1;
+                const isEnabled = enabledMods.includes(mod.name);
                 const prefix = isLast ? '└──' : '├──';
                 const status = isEnabled ? '✅' : '❌';
 
-                structure += `│   ${prefix} ${modName}/       ${status} ${isEnabled ? 'ATTIVA' : 'DISATTIVA'}\n`;
-                structure += `│   ${isLast ? '    ' : '│   '}└── mod.js\n`;
+                structure += `${prefix} 🧩 ${mod.name}       ${status} ${isEnabled ? 'ATTIVA' : 'DISATTIVA'}\n`;
             });
 
-            structure += '└── ...';
             container.textContent = structure;
         }
 
@@ -421,13 +459,6 @@
                 el.className = 'status-message';
             }, 3000);
         }
-
-        // Handle Enter key in input
-        document.getElementById('new-mod-name').addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') {
-                addNewMod();
-            }
-        });
     </script>
 </body>
 

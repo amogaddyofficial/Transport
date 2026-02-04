@@ -1,0 +1,10 @@
+[
+    {
+        "id": "example_city",
+        "name": "Città Esempio (Community)",
+        "file": "example_city.json",
+        "description": "Una città di esempio per iniziare a giocare",
+        "author": "Transport Team",
+        "date": "2026-02-04"
+    }
+]

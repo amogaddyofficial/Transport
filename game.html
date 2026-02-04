@@ -639,24 +639,15 @@
     </div>
 
     <!-- Overlay per il caricamento iniziale -->
-    <div id="loadOverlay" class="load-overlay">
-        <div class="load-card">
-            <h2>📂 Carica Gameplay</h2>
-            <p>🎯 Scegli come vuoi iniziare:</p>
-            <div style="display: flex; flex-direction: column; gap: 15px; margin-top: 20px;">
-                <button class="load-button" onclick="initLoadGameplay()" style="background: rgba(156, 39, 176, 0.8);">
-                    📂 Carica Gameplay Esistente
-                </button>
-                <button class="load-button" onclick="startNewGame()" style="background: rgba(33, 150, 243, 0.8);">
-                    🆕 Nuova Partita
-                </button>
-            </div>
-        </div>
+    </div>
+    </div>
     </div>
 
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="i18n.js"></script>
+    <script src="mods-db.js"></script>
+    <script src="saves-db.js"></script>
     <script>
         // Applica le traduzioni al caricamento della pagina
         function applyTranslations() {
@@ -801,50 +792,67 @@
             }
         };
 
-        // Funzione per caricare mod JavaScript
-        async function loadJavaScriptMods() {
-            const enabledMods = JSON.parse(localStorage.getItem('enabled_mods') || '[]');
-
-            if (enabledMods.length === 0) {
-                console.log('[MOD LOADER] No enabled mods found');
-                return;
-            }
-
-            console.log(`[MOD LOADER] Loading ${enabledMods.length} enabled mod(s):`, enabledMods);
-
-            for (const modName of enabledMods) {
-                try {
-                    console.log(`[MOD LOADER] Loading mod: ${modName}`);
-
-                    // Prova a caricare mod.js
-                    const response = await fetch(`mods/${modName}/mod.js`);
-                    if (!response.ok) {
-                        throw new Error(`Failed to fetch mod.js (Status: ${response.status})`);
-                    }
-
-                    const modCode = await response.text();
-                    console.log(`[MOD LOADER] Executing mod "${modName}"...`);
-
-                    // Esegui il codice della mod
-                    const script = document.createElement('script');
-                    script.textContent = modCode;
-                    script.setAttribute('data-mod', modName);
-                    document.head.appendChild(script);
-
-                    console.log(`[MOD LOADER] Mod "${modName}" loaded successfully!`);
-
-                } catch (err) {
-                    console.error(`[MOD LOADER] Error loading mod "${modName}":`, err);
-                    console.warn(`[MOD LOADER] Mod "${modName}" not found or failed to load. Continuing with other mods...`);
+        // Funzione per caricare mod JavaScript da IndexedDB
+        async function loadMods() {
+            try {
+                // Inizializza DB
+                if (window.ModsDB) {
+                    await ModsDB.init();
+                    console.log("ModsDB initialized");
+                } else {
+                    console.warn("ModsDB not found");
+                    return;
                 }
-            }
 
-            console.log('[MOD LOADER] All mods loaded');
+                // Ottieni mod abilitate
+                const enabledMods = JSON.parse(localStorage.getItem('enabled_mods') || '[]');
+
+                if (enabledMods.length === 0) {
+                    console.log('[MOD LOADER] No enabled mods found');
+                    return;
+                }
+
+                console.log(`[MOD LOADER] Loading ${enabledMods.length} mods...`);
+
+                // Carica ogni mod dal DB
+                for (const modName of enabledMods) {
+                    try {
+                        const mod = await ModsDB.getMod(modName);
+                        if (mod && mod.code) {
+                            console.log(`[MOD LOADER] Executing mod: ${modName}`);
+
+                            // Esegui il codice della mod in modo sicuro
+                            const modScript = `
+                                (async function() {
+                                    try {
+                                        ${mod.code}
+                                        console.log("✅ Mod loaded: ${modName}");
+                                    } catch(e) {
+                                        console.error("❌ Error running mod ${modName}:", e);
+                                    }
+                                })();
+                            `;
+
+                            const scriptEl = document.createElement('script');
+                            scriptEl.textContent = modScript;
+                            document.body.appendChild(scriptEl);
+                        } else {
+                            console.warn(`⚠️ Mod content not found for: ${modName}`);
+                        }
+                    } catch (e) {
+                        console.error(`Failed to load mod ${modName}:`, e);
+                    }
+                }
+
+                console.log('[MOD LOADER] All mods loaded');
+            } catch (error) {
+                console.error("Error in loadMods:", error);
+            }
         }
 
         // Carica le mod quando la mappa è pronta
         map.whenReady(() => {
-            loadJavaScriptMods();
+            loadMods();
         });
 
 
@@ -2731,60 +2739,24 @@
             }
         }
 
-        // Salvataggio e caricamento
-        async function requestGameplaysFolder() {
-            if (!('showDirectoryPicker' in window)) {
-                return null;
-            }
-
-            try {
-                const handle = await window.showDirectoryPicker({
-                    mode: 'readwrite',
-                    startIn: 'documents'
-                });
-
-                let gameplaysFolder = null;
-                try {
-                    gameplaysFolder = await handle.getDirectoryHandle('gameplays', { create: true });
-                } catch (e) {
-                    if (handle.name === 'gameplays') {
-                        gameplaysFolder = handle;
-                    } else {
-                        throw new Error('Impossibile creare la cartella "gameplays"');
-                    }
-                }
-
-                gameplaysFolderHandle = gameplaysFolder;
-                return gameplaysFolder;
-            } catch (e) {
-                console.error('Errore nell\'accesso alla cartella gameplays:', e);
-                return null;
-            }
-        }
-
         async function saveGameplay(showAlert = true) {
             try {
-                if (!gameplaysFolderHandle) {
-                    await requestGameplaysFolder();
-                }
-
-                if (!gameplaysFolderHandle) {
-                    if (showAlert) {
-                        alert('⚠️ Impossibile salvare il gameplay!\n\n🔴 Problema: Accesso alla cartella negato\n\n✅ Soluzione:\n• Assicurati di aver selezionato una cartella quando richiesto\n• Controlla i permessi del browser per l\'accesso ai file\n• Prova a selezionare una cartella diversa\n• Usa Chrome, Edge o Opera per il supporto completo');
-                    }
-                    return;
-                }
-
+                // Prepare data
                 if (!gameplayFileName) {
                     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-                    gameplayFileName = `gameplay_${timestamp}.json`;
+                    gameplayFileName = `gameplay_${timestamp}`;
                 }
+
+                // Chiedi nome salvataggio se nuovo
+                const saveName = prompt("Nome del salvataggio:", gameplayFileName.replace('.json', '')) || gameplayFileName;
 
                 if (!gameplayStartTime) {
                     gameplayStartTime = new Date().toISOString();
                 }
 
                 const gameplayData = {
+                    id: gameplayFileName.replace('.json', ''), // Use filename as ID base
+                    name: saveName,
                     center: [map.getCenter().lat, map.getCenter().lng],
                     zoom: map.getZoom(),
                     stations: stations.map(s => ({ ...s })),
@@ -2847,320 +2819,268 @@
                     lastSaveTime: new Date().toISOString()
                 };
 
-                const fileHandle = await gameplaysFolderHandle.getFileHandle(gameplayFileName, { create: true });
-                const writable = await fileHandle.createWritable();
-                await writable.write(JSON.stringify(gameplayData, null, 2));
-                await writable.close();
+                // Save to IndexedDB
+                await SavesDB.saveGame(gameplayData);
 
                 if (showAlert) {
-                    alert(`✅ Gameplay salvato: ${gameplayFileName}`);
+                    alert(`✅ Partita salvata nel browser!\nNome: ${saveName}`);
                 }
             } catch (e) {
-                console.error('Errore nel salvataggio del gameplay:', e);
-                let errorMessage = '❌ Errore nel salvataggio del gameplay.\n\n';
-
-                if (e.name === 'NotAllowedError' || e.message?.includes('permission')) {
-                    errorMessage += '🔴 Problema: Permessi negati\n';
-                    errorMessage += '• Il browser ha negato l\'accesso alla cartella\n';
-                    errorMessage += '• Clicca su "Consenti" quando richiesto\n';
-                    errorMessage += '• Verifica le impostazioni di privacy del browser';
-                } else if (e.name === 'NotFoundError' || e.message?.includes('not found')) {
-                    errorMessage += '🔴 Problema: Cartella non trovata\n';
-                    errorMessage += '• La cartella selezionata potrebbe essere stata spostata o eliminata\n';
-                    errorMessage += '• Seleziona nuovamente la cartella';
-                } else if (e.name === 'QuotaExceededError' || e.message?.includes('quota')) {
-                    errorMessage += '🔴 Problema: Spazio insufficiente\n';
-                    errorMessage += '• Non c\'è abbastanza spazio sul disco\n';
-                    errorMessage += '• Libera spazio e riprova';
-                } else if (e.message?.includes('JSON') || e.message?.includes('stringify')) {
-                    errorMessage += '🔴 Problema: Errore nella serializzazione dei dati\n';
-                    errorMessage += '• I dati del gameplay potrebbero essere corrotti\n';
-                    errorMessage += '• Prova a ricaricare la pagina e riprova';
-                } else {
-                    errorMessage += `🔴 Errore tecnico:\n`;
-                    errorMessage += `• Tipo: ${e.name || 'Sconosciuto'}\n`;
-                    errorMessage += `• Messaggio: ${e.message || 'Nessun dettaglio disponibile'}\n`;
-                    errorMessage += `• Controlla la console per maggiori dettagli`;
-                }
-
+                console.error('Errore nel salvataggio:', e);
                 if (showAlert) {
-                    alert(errorMessage);
+                    alert('❌ Errore nel salvataggio: ' + e);
                 }
             }
         }
 
         async function initLoadGameplay() {
             const overlay = document.getElementById('loadOverlay');
-            overlay.classList.add('hidden');
-            await loadGameplay();
+            const listContainer = document.getElementById('save-list-container');
+
+            // Pulisci contenitore
+            if (listContainer) {
+                listContainer.innerHTML = '<div style="text-align:center; padding: 20px;">Caricamento salvataggi...</div>';
+
+                let html = '';
+
+                // 1. Carica Salvataggi Locali
+                try {
+                    const localSaves = await SavesDB.getAllSaves();
+
+                    html += '<h3 style="margin: 10px 0; border-bottom: 1px solid #ccc;">🏠 I Miei Salvataggi (Locali)</h3>';
+
+                    if (localSaves.length === 0) {
+                        html += '<div class="empty-state" style="margin-bottom: 20px;">Nessun salvataggio locale.</div>';
+                    } else {
+                        html += localSaves.map(save => `
+                            <div class="save-item" onclick="loadGameFromDB('${save.id}')" style="background: rgba(255,255,255,0.8); padding: 15px; margin-bottom: 10px; border-radius: 10px; cursor: pointer; transition: transform 0.2s; border-left: 5px solid #4CAF50;">
+                                <div style="font-weight: bold; font-size: 1.1em;">${save.name}</div>
+                                <div style="font-size: 0.9em; color: #666;">${new Date(save.lastSaveTime).toLocaleString()}</div>
+                                <button onclick="event.stopPropagation(); deleteLocalSave('${save.id}')" style="float: right; margin-top: -20px; background: none; border: none; cursor: pointer;">🗑️</button>
+                            </div>
+                        `).join('');
+                    }
+                } catch (e) {
+                    html += `<div class="status-error">Errore caricamento locali: ${e}</div>`;
+                }
+
+                // 2. Carica Salvataggi Community
+                try {
+                    const response = await fetch('community/index.json');
+                    if (response.ok) {
+                        const communitySaves = await response.json();
+
+                        html += '<h3 style="margin: 20px 0 10px 0; border-bottom: 1px solid #ccc;">🌍 Community Online</h3>';
+
+                        if (communitySaves.length === 0) {
+                            html += '<div class="empty-state">Nessun salvataggio community disponibile.</div>';
+                        } else {
+                            html += communitySaves.map(save => `
+                                <div class="save-item" onclick="loadCommunitySave('${save.file}')" style="background: rgba(255,255,255,0.8); padding: 15px; margin-bottom: 10px; border-radius: 10px; cursor: pointer; transition: transform 0.2s; border-left: 5px solid #2196F3;">
+                                    <div style="font-weight: bold; font-size: 1.1em;">${save.name}</div>
+                                    <div style="font-size: 0.9em; color: #333; margin-top: 5px;">${save.description}</div>
+                                    <div style="font-size: 0.8em; color: #666; margin-top: 5px;">👤 ${save.author} • 📅 ${save.date}</div>
+                                </div>
+                            `).join('');
+                        }
+                    }
+                } catch (e) {
+                    // Ignora errore se offline o file non trovato (normale in dev)
+                    console.log("Community saves non disponibili:", e);
+                }
+
+                listContainer.innerHTML = html;
+            }
+
+            overlay.classList.remove('hidden');
         }
 
-        async function loadGameplay() {
+        async function deleteLocalSave(id) {
+            if (confirm("Eliminare questo salvataggio?")) {
+                await SavesDB.deleteGame(id);
+                initLoadGameplay(); // Ricarica lista
+            }
+        }
+
+        async function loadCommunitySave(filename) {
             try {
-                if (!('showOpenFilePicker' in window)) {
-                    alert('Il tuo browser non supporta la selezione diretta dei file. Usa un browser moderno come Chrome, Edge o Opera.');
-                    document.getElementById('loadOverlay').classList.remove('hidden');
-                    return;
-                }
+                const response = await fetch(`community/${filename}`);
+                if (!response.ok) throw new Error("Impossibile scaricare il file");
 
-                const [fileHandle] = await window.showOpenFilePicker({
-                    types: [{
-                        description: 'Gameplay files',
-                        accept: { 'application/json': ['.json'] }
-                    }]
+                const gameplayData = await response.json();
+                loadGameplayData(gameplayData);
+                document.getElementById('loadOverlay').classList.add('hidden');
+
+                alert(`🌍 Salvataggio Community caricato: ${gameplayData.name}`);
+            } catch (e) {
+                alert('❌ Errore caricamento community: ' + e);
+            }
+        }
+
+        async function loadGameFromDB(id) {
+            try {
+                const gameplayData = await SavesDB.loadGame(id);
+                loadGameplayData(gameplayData);
+                document.getElementById('loadOverlay').classList.add('hidden');
+            } catch (e) {
+                alert('❌ Errore caricamento: ' + e);
+            }
+        }
+
+        function loadGameplayData(gameplayData) {
+            // Reset mappa attuale
+            startNewGame();
+
+            // Carica i dati
+            if (gameplayData.center) {
+                map.setView(gameplayData.center, gameplayData.zoom || 13);
+            }
+
+            stations = gameplayData.stations || [];
+            customStations = gameplayData.customStations || [];
+            customTracks = gameplayData.customTracks || [];
+            metroLines = gameplayData.metroLines || [];
+            busLines = gameplayData.busLines || [];
+            tramLines = gameplayData.tramLines || [];
+            trainLines = gameplayData.trainLines || [];
+
+            // Supporta sia vecchi "trains" che nuovi "vehicles"
+            vehicles = gameplayData.vehicles || (gameplayData.trains ? gameplayData.trains.map(t => ({ ...t, type: 'train' })) : []);
+
+            // Ricrea i binari personalizzati
+            if (gameplayData.customTracks) {
+                gameplayData.customTracks.forEach(trackData => {
+                    const trackColor = trackData.type === 'metro' ? '#FF0000' : trackData.type === 'tram' ? '#9C27B0' : '#2196F3';
+                    const polyline = L.polyline(
+                        trackData.points.map(p => [p.lat, p.lng]),
+                        { color: trackColor, weight: 5, opacity: 0.8 }
+                    );
+                    polyline.addTo(map);
+
+                    const track = {
+                        id: trackData.id,
+                        type: trackData.type,
+                        points: trackData.points,
+                        polyline: polyline
+                    };
+                    customTracks.push(track);
+
+                    if (trackData.type === 'metro') metroTracks.push({ id: track.id, points: track.points });
+                    else if (trackData.type === 'tram') tramTracks.push({ id: track.id, points: track.points });
+                    else if (trackData.type === 'train') trainTracks.push({ id: track.id, points: track.points });
                 });
+            }
 
-                const file = await fileHandle.getFile();
-                const text = await file.text();
-                const gameplayData = JSON.parse(text);
-
-                // Carica i dati
-                if (gameplayData.center) {
-                    map.setView(gameplayData.center, gameplayData.zoom || 13);
-                }
-
-                stations = gameplayData.stations || [];
-                customStations = gameplayData.customStations || [];
-                customTracks = gameplayData.customTracks || [];
-                metroLines = gameplayData.metroLines || [];
-                busLines = gameplayData.busLines || [];
-                tramLines = gameplayData.tramLines || [];
-                trainLines = gameplayData.trainLines || [];
-                // Supporta sia vecchi "trains" che nuovi "vehicles"
-                vehicles = gameplayData.vehicles || (gameplayData.trains ? gameplayData.trains.map(t => ({ ...t, type: 'train' })) : []);
-
-                // Rimuovi layer esistenti
-                stationMarkers.forEach(marker => map.removeLayer(marker));
-                customTracks.forEach(track => {
-                    if (track.polyline) map.removeLayer(track.polyline);
-                });
-                metroLines.forEach(line => {
-                    if (line.polyline) map.removeLayer(line.polyline);
-                });
-                stationMarkers = [];
-                customTracks = [];
-
-                // Ricrea i binari personalizzati
-                if (gameplayData.customTracks) {
-                    gameplayData.customTracks.forEach(trackData => {
-                        const trackColor = trackData.type === 'metro' ? '#FF0000' : trackData.type === 'tram' ? '#9C27B0' : '#2196F3';
-                        const polyline = L.polyline(
-                            trackData.points.map(p => [p.lat, p.lng]),
-                            {
-                                color: trackColor,
-                                weight: 5,
-                                opacity: 0.8
-                            }
-                        );
-                        polyline.addTo(map);
-
-                        const track = {
-                            id: trackData.id,
-                            type: trackData.type,
-                            points: trackData.points,
-                            polyline: polyline
-                        };
-                        customTracks.push(track);
-
-                        // Aggiungi alla rete appropriata
-                        if (trackData.type === 'metro') {
-                            metroTracks.push({
-                                id: track.id,
-                                points: track.points
-                            });
-                        } else if (trackData.type === 'tram') {
-                            tramTracks.push({
-                                id: track.id,
-                                points: track.points
-                            });
-                        } else if (trackData.type === 'train') {
-                            trainTracks.push({
-                                id: track.id,
-                                points: track.points
-                            });
-                        }
-                    });
-                }
-
-                // Ricrea le stazioni personalizzate
-                if (gameplayData.customStations) {
-                    gameplayData.customStations.forEach(stationData => {
-                        const emoji = stationData.type === 'metro' ? '🚇' : stationData.type === 'tram' ? '🚊' : '🚉';
-                        const stationColor = stationData.type === 'metro' ? '#FF0000' : stationData.type === 'tram' ? '#9C27B0' : '#2196F3';
-
-                        const icon = L.divIcon({
-                            className: 'station-marker-wrapper',
-                            html: `
-                                <div class="station-marker" style="background: ${stationColor}; border-color: ${stationColor};">
-                                    ${emoji}
-                                </div>
-                            `,
-                            iconSize: [30, 30],
-                            iconAnchor: [15, 15],
-                            popupAnchor: [0, -15]
-                        });
-
-                        const marker = L.marker([stationData.lat, stationData.lng], { icon });
-                        marker.bindPopup(`<strong>${stationData.name}</strong><br>${emoji} ${stationData.type === 'metro' ? 'Metro' : stationData.type === 'tram' ? 'Tram' : 'Treno'}`);
-
-                        // Associa il tipo di stazione al marker (converti metro in train per i filtri)
-                        const filterType = stationData.type === 'metro' ? 'train' : stationData.type;
-                        marker.stationType = filterType;
-                        marker.station = stationData;
-
-                        // Applica il filtro corrente
-                        if (!stationFilters[filterType]) {
-                            marker.setOpacity(0);
-                        }
-
-                        marker.addTo(map);
-
-                        const station = {
-                            ...stationData,
-                            marker: marker
-                        };
-                        customStations.push(station);
-                        stations.push(station);
-                        stationMarkers.push(marker);
-                    });
-                }
-
-                // Ricrea le stazioni
-                stations.forEach(station => {
-                    // Salta se è già stata ricreata come stazione personalizzata
-                    if (station.isCustom && customStations.find(s => s.id === station.id)) {
-                        return;
-                    }
-                    // Usa l'emoji salvata o determina in base al tipo
-                    let emoji = station.emoji || '🚉';
-                    let stationType = station.type || 'train';
-
-                    if (!station.emoji) {
-                        // Se non c'è emoji salvata, determina in base al tipo
-                        if (stationType === 'bus') {
-                            emoji = '🚌';
-                        } else if (stationType === 'tram') {
-                            emoji = '🚊';
-                        } else {
-                            emoji = '🚉';
-                        }
-                    }
+            // Ricrea le stazioni personalizzate
+            if (gameplayData.customStations) {
+                gameplayData.customStations.forEach(stationData => {
+                    const emoji = stationData.type === 'metro' ? '🚇' : stationData.type === 'tram' ? '🚊' : '🚉';
+                    const stationColor = stationData.type === 'metro' ? '#FF0000' : stationData.type === 'tram' ? '#9C27B0' : '#2196F3';
 
                     const icon = L.divIcon({
-                        className: 'station-marker station-' + stationType,
-                        html: emoji,
+                        className: 'station-marker-wrapper',
+                        html: `<div class="station-marker" style="background: ${stationColor}; border-color: ${stationColor};">${emoji}</div>`,
                         iconSize: [30, 30],
-                        iconAnchor: [15, 15]
+                        iconAnchor: [15, 15],
+                        popupAnchor: [0, -15]
                     });
 
-                    const marker = L.marker([station.lat, station.lng], { icon });
-                    const typeName = stationType === 'train' ? 'Treno/Metro' : stationType === 'bus' ? 'Bus' : 'Tram';
-                    marker.bindPopup(`${emoji} ${station.name || 'Stazione'}<br><small>Tipo: ${typeName}</small>`);
-
-                    // Associa il tipo di stazione al marker
-                    marker.stationType = stationType;
-                    marker.station = station;
-
-                    // Applica il filtro corrente
-                    if (!stationFilters[stationType]) {
-                        marker.setOpacity(0);
-                    }
-
-                    // Aggiungi evento click
-                    marker.on('click', (e) => {
-                        if (isCreatingLine) {
-                            e.originalEvent.stopPropagation();
-                            addStationToLine(station);
-                        }
-                    });
-
+                    const marker = L.marker([stationData.lat, stationData.lng], { icon });
+                    marker.bindPopup(`<strong>${stationData.name}</strong><br>${emoji} ${stationData.type === 'metro' ? 'Metro' : stationData.type === 'tram' ? 'Tram' : 'Treno'}`);
+                    marker.stationType = stationData.type === 'metro' ? 'train' : stationData.type;
+                    marker.station = stationData;
                     marker.addTo(map);
+
+                    const station = { ...stationData, marker: marker };
+                    customStations.push(station);
+                    stations.push(station); // Aggiungi anche a stazioni globali per compatibilità
                     stationMarkers.push(marker);
                 });
-
-                // Ricrea tutte le linee (metro, bus, tram, treni)
-                const allLinesToRecreate = [...metroLines, ...busLines, ...tramLines, ...trainLines];
-                allLinesToRecreate.forEach(line => {
-                    const routePoints = line.route && line.route.length > 0
-                        ? line.route.map(p => Array.isArray(p) ? p : [p.lat, p.lng])
-                        : line.stations.map(s => [s.lat, s.lng]);
-
-                    const polyline = L.polyline(routePoints, {
-                        color: line.color,
-                        weight: 6,
-                        opacity: 0.8
-                    });
-                    polyline.addTo(map);
-                    line.polyline = polyline;
-                });
-
-                // Ricrea i veicoli (supporta sia vecchi "trains" che nuovi "vehicles")
-                vehicles.forEach(vehicleData => {
-                    const vehicle = {
-                        ...vehicleData,
-                        type: vehicleData.type || 'train', // Default a train per compatibilità
-                        isMoving: false,
-                        isStopped: true,
-                        stopTime: 0
-                    };
-
-                    // Trova la linea appropriata
-                    let line = null;
-                    if (vehicle.type === 'bus') {
-                        line = busLines.find(l => l.id === vehicleData.lineId);
-                    } else if (vehicle.type === 'tram') {
-                        line = tramLines.find(l => l.id === vehicleData.lineId);
-                    } else if (vehicle.type === 'metro') {
-                        line = metroLines.find(l => l.id === vehicleData.lineId);
-                    } else if (vehicle.type === 'train') {
-                        line = trainLines.find(l => l.id === vehicleData.lineId);
-                    }
-
-                    // Se non trova la linea, prova a cercare in tutte
-                    if (!line) {
-                        const allLines = [...metroLines, ...busLines, ...tramLines, ...trainLines];
-                        line = allLines.find(l => l.id === vehicleData.lineId);
-                    }
-
-                    const lineColor = line ? line.color : '#FFC107';
-                    const emoji = VEHICLE_EMOJIS[vehicle.type] || '🚂';
-                    const vehicleName = vehicle.type === 'bus' ? 'Bus' : vehicle.type === 'tram' ? 'Tram' : vehicle.type === 'metro' ? 'Metro' : 'Treno';
-
-                    // Crea icona personalizzata con colore della linea
-                    const iconHtml = `
-                        <div class="train-marker" style="border-color: ${lineColor}; box-shadow: 0 3px 12px rgba(0, 0, 0, 0.4), 0 0 0 3px ${lineColor}40;">
-                            ${emoji}
-                        </div>
-                    `;
-
-                    const icon = L.divIcon({
-                        className: 'train-marker-wrapper',
-                        html: iconHtml,
-                        iconSize: [32, 32],
-                        iconAnchor: [16, 16],
-                        popupAnchor: [0, -16]
-                    });
-
-                    vehicle.marker = L.marker([vehicle.position.lat, vehicle.position.lng], { icon });
-                    vehicle.marker.bindPopup(`${emoji} ${vehicleName} sulla <strong style="color: ${lineColor}">${vehicle.lineName || 'linea'}</strong>`);
-                    vehicle.marker.addTo(map);
-                });
-
-                gameplayFileName = fileHandle.name;
-                gameplayStartTime = gameplayData.startTime || new Date().toISOString();
-
-                updateStationsInfo();
-                updateVehiclesInfo();
-                updateMetroLinesList();
-            } catch (e) {
-                if (e.name === 'AbortError') {
-                    document.getElementById('loadOverlay').classList.remove('hidden');
-                    return;
-                }
-                console.error('Errore nel caricamento del gameplay:', e);
-                alert('❌ Errore nel caricamento del gameplay');
-                document.getElementById('loadOverlay').classList.remove('hidden');
             }
+
+            // Ricrea le stazioni normali
+            stations.forEach(station => {
+                if (station.isCustom) return; // Già gestite sopra
+
+                let emoji = station.emoji || '🚉';
+                let stationType = station.type || 'train';
+                if (!station.emoji) {
+                    if (stationType === 'bus') emoji = '🚌';
+                    else if (stationType === 'tram') emoji = '🚊';
+                }
+
+                const icon = L.divIcon({
+                    className: 'station-marker station-' + stationType,
+                    html: emoji,
+                    iconSize: [30, 30],
+                    iconAnchor: [15, 15]
+                });
+
+                const marker = L.marker([station.lat, station.lng], { icon });
+                marker.bindPopup(`${emoji} ${station.name || 'Stazione'}<br><small>Tipo: ${stationType}</small>`);
+                marker.stationType = stationType;
+                marker.station = station;
+                marker.on('click', (e) => {
+                    if (isCreatingLine) {
+                        e.originalEvent.stopPropagation();
+                        addStationToLine(station);
+                    }
+                });
+                marker.addTo(map);
+                stationMarkers.push(marker);
+            });
+
+            // Ricrea linee
+            const allLinesToRecreate = [...metroLines, ...busLines, ...tramLines, ...trainLines];
+            allLinesToRecreate.forEach(line => {
+                const routePoints = line.route && line.route.length > 0
+                    ? line.route.map(p => Array.isArray(p) ? p : [p.lat, p.lng])
+                    : line.stations.map(s => [s.lat, s.lng]);
+
+                const polyline = L.polyline(routePoints, {
+                    color: line.color,
+                    weight: 6,
+                    opacity: 0.8
+                });
+                polyline.addTo(map);
+                line.polyline = polyline;
+            });
+
+            // Ricrea veicoli
+            vehicles.forEach(vehicleData => {
+                // Trova linea (se possibile)
+                const allLines = [...metroLines, ...busLines, ...tramLines, ...trainLines];
+                let line = allLines.find(l => l.id === vehicleData.lineId);
+                const lineColor = line ? line.color : '#FFC107';
+                const emoji = VEHICLE_EMOJIS[vehicleData.type] || '🚂';
+
+                const icon = L.divIcon({
+                    className: 'train-marker-wrapper',
+                    html: `<div class="train-marker" style="border-color: ${lineColor}; box-shadow: 0 3px 12px rgba(0,0,0,0.4), 0 0 0 3px ${lineColor}40;">${emoji}</div>`,
+                    iconSize: [32, 32],
+                    iconAnchor: [16, 16],
+                    popupAnchor: [0, -16]
+                });
+
+                const vehicle = { ...vehicleData, isMoving: false, isStopped: true };
+                vehicle.marker = L.marker([vehicle.position.lat, vehicle.position.lng], { icon });
+                vehicle.marker.bindPopup(`${emoji} ${vehicleData.type} sulla <strong style="color: ${lineColor}">${vehicle.lineName || 'linea'}</strong>`);
+                vehicle.marker.addTo(map);
+
+                // Aggiorna riferimento nell'array globale se necessario, o usa quello che abbiamo creato
+                // Nota: vehicleData è già dentro vehicles array globale dal parse, ma qui stiamo rigenerando marker
+                // Quindi aggiorno l'oggetto nell'array
+                Object.assign(vehicleData, vehicle);
+            });
+
+            gameplayFileName = gameplayData.id;
+            gameplayStartTime = gameplayData.startTime || new Date().toISOString();
+
+            updateStationsInfo();
+            updateVehiclesInfo();
+            updateMetroLinesList();
+
+            alert(`✅ Partita "${gameplayData.name || gameplayData.id}" caricata!`);
         }
 
         function startNewGame() {
