@@ -1,0 +1,3259 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gioco - Trasporti</title>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 50%, #e8ecf1 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+            padding: 20px;
+            overflow-x: auto;
+        }
+
+        @keyframes gradientShift {
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: #2c3e50;
+        }
+
+        h1 span {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .back-button {
+            padding: 12px 25px;
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            border-radius: 15px;
+            color: #2c3e50;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+            cursor: pointer;
+        }
+
+        .back-button:hover {
+            background: rgba(255, 255, 255, 0.85);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 1);
+        }
+
+        .editor-container {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .tools-panel {
+            flex: 0 0 250px;
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(40px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            padding: 20px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+        }
+
+        .tools-panel-right {
+            flex: 0 0 250px;
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(40px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            padding: 20px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+        }
+
+        .tools-panel h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+
+        .tool-button {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 10px;
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            border-radius: 10px;
+            color: #2c3e50;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+        }
+
+        .tool-button:hover {
+            background: rgba(255, 255, 255, 0.85);
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 1);
+        }
+
+        .tool-button.active {
+            background: rgba(255, 255, 255, 0.9);
+            border-color: rgba(255, 255, 255, 1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 1);
+        }
+
+        .map-container {
+            flex: 1;
+            min-width: 600px;
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(40px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            padding: 20px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+            overflow: hidden;
+            position: relative;
+        }
+
+        #map {
+            width: 100%;
+            height: 600px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Pannello filtri stazioni */
+        .station-filter-panel {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            padding: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .station-filter-panel h4 {
+            color: #2c3e50;
+            font-size: 0.9em;
+            margin-bottom: 8px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .filter-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            background: rgba(255, 255, 255, 0.6);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .filter-icon:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .filter-icon.active {
+            background: rgba(76, 175, 80, 0.3);
+            border-color: rgba(76, 175, 80, 0.8);
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+        }
+
+        .filter-icon.inactive {
+            opacity: 0.4;
+            background: rgba(244, 67, 54, 0.2);
+            border-color: rgba(244, 67, 54, 0.5);
+        }
+
+        .filter-icon.train {
+            background: rgba(78, 205, 196, 0.6);
+        }
+
+        .filter-icon.bus {
+            background: rgba(255, 152, 0, 0.6);
+        }
+
+        .filter-icon.tram {
+            background: rgba(156, 39, 176, 0.6);
+        }
+
+        .info-panel {
+            margin-top: 20px;
+            color: #2c3e50;
+            font-size: 0.9em;
+        }
+
+        .info-panel div {
+            margin-bottom: 5px;
+        }
+
+        .load-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        }
+
+        .load-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            padding: 40px 50px;
+            text-align: center;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 1);
+        }
+
+        .load-card h2 {
+            color: #2c3e50;
+            font-size: 2em;
+            margin-bottom: 20px;
+        }
+
+        .load-card p {
+            color: rgba(44, 62, 80, 0.8);
+            font-size: 1.1em;
+            margin-bottom: 30px;
+        }
+
+        .load-button {
+            padding: 15px 40px;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            color: #2c3e50;
+            font-size: 1.2em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 1);
+            margin: 5px;
+        }
+
+        .load-button:hover {
+            background: rgba(255, 255, 255, 0.95);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 1);
+        }
+
+        .load-overlay.hidden {
+            display: none;
+        }
+
+        /* Stili per i marker delle stazioni */
+        .station-marker {
+            background: rgba(255, 107, 107, 0.8);
+            border: 3px solid #fff;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Stazioni treni/metro */
+        .station-marker.station-train {
+            background: rgba(78, 205, 196, 0.8);
+            border-color: #4ECDC4;
+        }
+
+        /* Stazioni bus */
+        .station-marker.station-bus {
+            background: rgba(255, 152, 0, 0.8);
+            border-color: #FF9800;
+        }
+
+        /* Stazioni tram */
+        .station-marker.station-tram {
+            background: rgba(156, 39, 176, 0.8);
+            border-color: #9C27B0;
+        }
+
+        /* Stili per i marker dei treni */
+        .train-marker {
+            background: rgba(255, 193, 7, 0.9);
+            border: 3px solid #fff;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.4), 0 0 0 2px rgba(255, 193, 7, 0.3);
+            animation: trainPulse 2s ease-in-out infinite;
+            cursor: pointer;
+        }
+
+        @keyframes trainPulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+                box-shadow: 0 3px 12px rgba(0, 0, 0, 0.4), 0 0 0 2px rgba(255, 193, 7, 0.3);
+            }
+
+            50% {
+                transform: scale(1.1);
+                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), 0 0 0 4px rgba(255, 193, 7, 0.5);
+            }
+        }
+
+        .train-marker:hover {
+            transform: scale(1.15);
+            z-index: 1000;
+        }
+
+        /* Stili per i controlli del tempo */
+        .time-controls {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.7);
+        }
+
+        .time-controls h4 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 1em;
+        }
+
+        .time-buttons {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+
+        .time-button {
+            flex: 1;
+            min-width: 60px;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            border-radius: 8px;
+            color: #2c3e50;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .time-button:hover {
+            background: rgba(255, 255, 255, 0.85);
+        }
+
+        .time-button.active {
+            background: rgba(76, 175, 80, 0.6);
+            color: #fff;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header glass-card">
+            <h1>🚇 <span data-i18n="index.title">TRASPORTI</span></h1>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <button class="back-button" onclick="saveGameplay()" style="background: rgba(76, 175, 80, 0.6);">
+                    💾 <span data-i18n="game.save">Salva</span>
+                </button>
+                <a href="index.html" class="back-button">⬅️ <span data-i18n="game.back">Menu</span></a>
+            </div>
+        </div>
+
+        <div class="editor-container">
+            <!-- Pannello sinistra -->
+            <div class="tools-panel">
+                <h3>🛤️ <span data-i18n="game.tracks.title">Costruzione Binari</span></h3>
+                <div style="margin-bottom: 10px;">
+                    <select id="track-type-select"
+                        style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.8); background: rgba(255, 255, 255, 0.6); color: #2c3e50; font-weight: 600;">
+                        <option value="metro">🚇 Metro</option>
+                        <option value="tram">🚊 Tram</option>
+                        <option value="train">🚂 Treno</option>
+                    </select>
+                </div>
+                <button class="tool-button" id="create-track-button" onclick="startCreatingTrack()"
+                    style="background: rgba(156, 39, 176, 0.6);">
+                    ➕ <span data-i18n="game.tracks.create">Crea Binari</span>
+                </button>
+                <div id="track-creation-controls" style="display: none; margin-top: 10px;">
+                    <button class="tool-button" id="finish-track-button" onclick="finishCreatingTrack()"
+                        style="background: rgba(76, 175, 80, 0.6);">
+                        ✅ <span data-i18n="game.tracks.finish">Termina Binario</span>
+                    </button>
+                    <button class="tool-button" id="cancel-track-button" onclick="cancelCreatingTrack()"
+                        style="background: rgba(244, 67, 54, 0.6);">
+                        ❌ <span data-i18n="common.cancel">Annulla</span>
+                    </button>
+                </div>
+                <div id="track-creation-info"
+                    style="display: none; margin-top: 15px; padding: 10px; background: rgba(255, 255, 255, 0.5); border-radius: 10px; color: #2c3e50; font-size: 0.9em; border: 1px solid rgba(255, 255, 255, 0.7);">
+                    <div id="track-creation-status" data-i18n="game.tracks.clickToAdd">👆 Clicca sulla mappa per
+                        aggiungere punti al binario</div>
+                </div>
+
+                <h3 style="margin-top: 20px;">🚉 <span data-i18n="game.customStations.title">Stazioni
+                        Personalizzate</span></h3>
+                <div style="margin-bottom: 10px;">
+                    <select id="custom-station-type-select"
+                        style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.8); background: rgba(255, 255, 255, 0.6); color: #2c3e50; font-weight: 600;">
+                        <option value="metro">🚇 Metro</option>
+                        <option value="tram">🚊 Tram</option>
+                        <option value="train">🚂 Treno</option>
+                    </select>
+                </div>
+                <button class="tool-button" id="add-custom-station-button" onclick="startAddingCustomStation()"
+                    style="background: rgba(33, 150, 243, 0.6);">
+                    ➕ <span data-i18n="game.customStations.add">Aggiungi Stazione</span>
+                </button>
+                <div id="custom-station-info"
+                    style="display: none; margin-top: 15px; padding: 10px; background: rgba(255, 255, 255, 0.5); border-radius: 10px; color: #2c3e50; font-size: 0.9em; border: 1px solid rgba(255, 255, 255, 0.7);">
+                    <div id="custom-station-status" data-i18n="game.customStations.clickToPlace">👆 Clicca sulla mappa
+                        per posizionare la stazione</div>
+                </div>
+
+                <h3 style="margin-top: 20px;">🚉 <span data-i18n="game.stations.title">Stazioni e Reti</span></h3>
+                <div
+                    style="padding: 10px; background: rgba(33, 150, 243, 0.3); border-radius: 8px; margin-bottom: 10px; font-size: 0.85em; color: rgba(44, 62, 80, 0.8);">
+                    🧩 <span data-i18n="game.stations.modLoad">Stazioni caricate da mod</span><br>
+                    <small data-i18n="game.stations.modLoadDesc">Le stazioni reali vengono caricate tramite mod (es.
+                        "real_stations")</small>
+                </div>
+                <div id="stations-info"
+                    style="margin-top: 15px; padding: 10px; background: rgba(255, 255, 255, 0.5); border-radius: 10px; color: #2c3e50; font-size: 0.9em; border: 1px solid rgba(255, 255, 255, 0.7);">
+                    <div>🚉 <span data-i18n="game.stations.loaded">Stazioni caricate</span>: <span
+                            id="stations-count">0</span></div>
+                    <div id="stations-breakdown"
+                        style="margin-top: 5px; font-size: 0.85em; color: rgba(44, 62, 80, 0.7);">
+                        <div>🚉 <span data-i18n="game.stations.train">Treno/Metro</span>: <span
+                                id="stations-train">0</span></div>
+                        <div>🚌 <span data-i18n="game.stations.bus">Bus</span>: <span id="stations-bus">0</span></div>
+                        <div>🚊 <span data-i18n="game.stations.tram">Tram</span>: <span id="stations-tram">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <h3 style="margin-top: 20px;">🚇 <span data-i18n="game.lines.title">Linee Trasporto</span></h3>
+                <div style="margin-bottom: 10px;">
+                    <select id="line-type-select"
+                        style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.8); background: rgba(255, 255, 255, 0.6); color: #2c3e50; font-weight: 600;">
+                        <option value="metro">🚇 Metro</option>
+                        <option value="bus">🚌 Bus</option>
+                        <option value="tram">🚊 Tram</option>
+                        <option value="train">🚂 Treno</option>
+                    </select>
+                </div>
+                <button class="tool-button" id="create-line-button" onclick="startCreatingLine()"
+                    style="background: rgba(156, 39, 176, 0.6);">
+                    ➕ <span data-i18n="game.lines.create">Crea Linea</span>
+                </button>
+                <div id="line-creation-controls" style="display: none; margin-top: 10px;">
+                    <button class="tool-button" id="confirm-line-button" onclick="confirmCreatingLine()"
+                        style="background: rgba(76, 175, 80, 0.6);">
+                        ✅ <span data-i18n="common.confirm">Conferma</span>
+                    </button>
+                    <button class="tool-button" id="cancel-line-button" onclick="cancelCreatingLine()"
+                        style="background: rgba(244, 67, 54, 0.6);">
+                        ❌ <span data-i18n="common.cancel">Annulla</span>
+                    </button>
+                </div>
+                <div id="line-creation-info"
+                    style="display: none; margin-top: 15px; padding: 10px; background: rgba(255, 255, 255, 0.5); border-radius: 10px; color: #2c3e50; font-size: 0.9em; border: 1px solid rgba(255, 255, 255, 0.7);">
+                    <div id="line-creation-status" data-i18n="game.lines.clickStations">👆 Clicca sulle stazioni per
+                        creare la linea</div>
+                </div>
+                <div id="metro-lines-list" style="margin-top: 15px; max-height: 200px; overflow-y: auto;">
+                    <!-- Le linee verranno aggiunte qui dinamicamente -->
+                </div>
+
+                <h3 style="margin-top: 20px;">🗺️ <span data-i18n="game.pathfinding.title">Pathfinding</span></h3>
+                <button class="tool-button" id="pathfinding-button" onclick="togglePathfinding()">
+                    🔍 <span data-i18n="game.pathfinding.find">Trova Percorso</span>
+                </button>
+                <div id="pathfinding-info"
+                    style="display: none; margin-top: 15px; padding: 10px; background: rgba(255, 255, 255, 0.5); border-radius: 10px; color: #2c3e50; font-size: 0.9em; border: 1px solid rgba(255, 255, 255, 0.7);">
+                    <div id="pathfinding-status" data-i18n="game.pathfinding.clickStart">👆 Clicca su una stazione di
+                        partenza</div>
+                </div>
+
+                <div class="info-panel" style="margin-top: 20px;">
+                    <div>🖱️ <span data-i18n="game.info.position">Posizione</span>: <span id="mousePos">-</span></div>
+                </div>
+            </div>
+
+            <div class="map-container">
+                <div id="map"></div>
+                <!-- Pannello filtri stazioni -->
+                <div class="station-filter-panel">
+                    <h4>🔍 Filtri Stazioni</h4>
+                    <div class="filter-icon train active" id="filter-train" onclick="toggleStationFilter('train')"
+                        title="Mostra/Nascondi Stazioni Treno/Metro">
+                        🚉
+                    </div>
+                    <div class="filter-icon bus active" id="filter-bus" onclick="toggleStationFilter('bus')"
+                        title="Mostra/Nascondi Stazioni Bus">
+                        🚌
+                    </div>
+                    <div class="filter-icon tram active" id="filter-tram" onclick="toggleStationFilter('tram')"
+                        title="Mostra/Nascondi Stazioni Tram">
+                        🚊
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pannello destra -->
+            <div class="tools-panel-right">
+                <h3>🚗 <span data-i18n="game.vehicles.title">Veicoli</span></h3>
+                <div style="margin-bottom: 10px;">
+                    <select id="vehicle-type-select"
+                        style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.8); background: rgba(255, 255, 255, 0.6); color: #2c3e50; font-weight: 600;">
+                        <option value="bus">🚌 Bus</option>
+                        <option value="tram">🚊 Tram</option>
+                        <option value="metro">🚇 Metro</option>
+                        <option value="train">🚂 Treno</option>
+                    </select>
+                </div>
+                <button class="tool-button" id="add-vehicle-button" onclick="addVehicle()">
+                    ➕ <span data-i18n="game.vehicles.add">Aggiungi Veicolo</span>
+                </button>
+                <button class="tool-button" id="start-vehicles-button" onclick="startVehicles()"
+                    style="background: rgba(76, 175, 80, 0.6);">
+                    ▶️ <span data-i18n="game.vehicles.start">Avvia Veicoli</span>
+                </button>
+                <button class="tool-button" id="stop-vehicles-button" onclick="stopVehicles()"
+                    style="background: rgba(244, 67, 54, 0.6);">
+                    ⏹️ <span data-i18n="game.vehicles.stop">Ferma Veicoli</span>
+                </button>
+                <button class="tool-button" id="delete-vehicle-button" onclick="deleteVehicle()"
+                    style="background: rgba(244, 67, 54, 0.6); margin-top: 10px;">
+                    🗑️ <span data-i18n="game.vehicles.delete">Elimina Veicolo</span>
+                </button>
+                <div id="vehicles-info"
+                    style="margin-top: 15px; padding: 10px; background: rgba(255, 255, 255, 0.5); border-radius: 10px; color: #2c3e50; font-size: 0.9em; border: 1px solid rgba(255, 255, 255, 0.7);">
+                    <div>🚗 <span data-i18n="game.vehicles.total">Veicoli totali</span>: <span
+                            id="vehicles-count">0</span></div>
+                    <div style="margin-top: 5px; font-size: 0.85em; color: rgba(44, 62, 80, 0.7);">
+                        <div>🚌 Bus: <span id="buses-count">0</span></div>
+                        <div>🚊 Tram: <span id="trams-count">0</span></div>
+                        <div>🚇 Metro: <span id="metros-count">0</span></div>
+                        <div>🚂 Treni: <span id="trains-count">0</span></div>
+                    </div>
+                </div>
+
+                <div class="time-controls" style="margin-top: 20px;">
+                    <h4>⏱️ <span data-i18n="game.time.title">Velocità Simulazione</span></h4>
+                    <div class="time-buttons">
+                        <button class="time-button" id="time-pause" onclick="setSimulationSpeed(0)">⏸️</button>
+                        <button class="time-button active" id="time-0.5x"
+                            onclick="setSimulationSpeed(0.5)">0.5x</button>
+                        <button class="time-button active" id="time-1x" onclick="setSimulationSpeed(1)">1x</button>
+                        <button class="time-button" id="time-2x" onclick="setSimulationSpeed(2)">2x</button>
+                        <button class="time-button" id="time-4x" onclick="setSimulationSpeed(4)">4x</button>
+                    </div>
+                    <div style="margin-top: 10px; color: #2c3e50; font-size: 0.9em;">
+                        ⏰ <span data-i18n="game.time.time">Tempo</span>: <span id="simulation-time">00:00:00</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overlay per il caricamento iniziale -->
+    <div id="loadOverlay" class="load-overlay">
+        <div class="load-card">
+            <h2>📂 Carica Gameplay</h2>
+            <p>🎯 Scegli come vuoi iniziare:</p>
+            <div style="display: flex; flex-direction: column; gap: 15px; margin-top: 20px;">
+                <button class="load-button" onclick="initLoadGameplay()" style="background: rgba(156, 39, 176, 0.8);">
+                    📂 Carica Gameplay Esistente
+                </button>
+                <button class="load-button" onclick="startNewGame()" style="background: rgba(33, 150, 243, 0.8);">
+                    🆕 Nuova Partita
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="i18n.js"></script>
+    <script>
+        // Applica le traduzioni al caricamento della pagina
+        function applyTranslations() {
+            const language = localStorage.getItem('language') || 'it';
+            document.documentElement.lang = language;
+
+            // Aggiorna tutti gli elementi con data-i18n
+            document.querySelectorAll('[data-i18n]').forEach(element => {
+                const key = element.getAttribute('data-i18n');
+                const translation = t(key, language);
+                if (translation) {
+                    element.textContent = translation;
+                }
+            });
+        }
+
+
+
+        // Applica le traduzioni quando il DOM è pronto
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', applyTranslations);
+        } else {
+            applyTranslations();
+        }
+
+        // ========== MOD LOADER SYSTEM (JAVASCRIPT) ==========
+
+        // API per le mod - Permette alle mod di registrare stazioni e binari
+        window.MOD_API = {
+            // Registra una singola stazione
+            registerStation: function (stationData) {
+                // stationData: {id, lat, lng, name, type, tags}
+                // type: 'train', 'bus', 'tram'
+                const station = {
+                    id: stationData.id,
+                    lat: stationData.lat,
+                    lng: stationData.lng,
+                    name: stationData.name,
+                    type: stationData.type,
+                    tags: stationData.tags || {},
+                    isCustom: false,
+                    fromMod: true
+                };
+
+                stations.push(station);
+
+                // Crea marker per la stazione
+                const emoji = station.type === 'train' ? '🚉' : station.type === 'bus' ? '🚌' : '🚊';
+                const stationColor = station.type === 'train' ? '#4ECDC4' : station.type === 'bus' ? '#FF9800' : '#9C27B0';
+
+                const icon = L.divIcon({
+                    className: 'station-marker-wrapper',
+                    html: `
+                        <div class="station-marker station-${station.type}" style="background: ${stationColor}; border-color: ${stationColor};">
+                            ${emoji}
+                        </div>
+                    `,
+                    iconSize: [30, 30],
+                    iconAnchor: [15, 15],
+                    popupAnchor: [0, -15]
+                });
+
+                const marker = L.marker([station.lat, station.lng], { icon });
+                marker.bindPopup(`<strong>${station.name}</strong><br>${emoji} ${station.type === 'train' ? 'Treno/Metro' : station.type === 'bus' ? 'Bus' : 'Tram'}`);
+
+                // Associa il tipo di stazione al marker
+                marker.stationType = station.type;
+                marker.station = station;
+
+                // Applica il filtro corrente
+                if (!stationFilters[station.type]) {
+                    marker.setOpacity(0);
+                }
+
+                marker.addTo(map);
+                station.marker = marker;
+                stationMarkers.push(marker);
+
+                return station.id;
+            },
+
+            // Registra multiple stazioni
+            registerStations: function (stationsArray) {
+                const registeredIds = [];
+                for (const stationData of stationsArray) {
+                    const id = this.registerStation(stationData);
+                    registeredIds.push(id);
+                }
+                updateStationsInfo();
+                return registeredIds;
+            },
+
+            // Registra binari/strade
+            registerTrack: function (trackData) {
+                // trackData: {id, type, points: [{lat, lng}]}
+                // type: 'metro', 'tram', 'train', 'road'
+                const track = {
+                    id: trackData.id,
+                    type: trackData.type,
+                    points: trackData.points,
+                    fromMod: true
+                };
+
+                // Aggiungi alla rete appropriata
+                if (trackData.type === 'metro') {
+                    metroTracks.push(track);
+                } else if (trackData.type === 'tram') {
+                    tramTracks.push(track);
+                } else if (trackData.type === 'train') {
+                    trainTracks.push(track);
+                } else if (trackData.type === 'road') {
+                    roadNetwork.push(track);
+                }
+
+                return track.id;
+            },
+
+            // Registra multiple binari/strade
+            registerTracks: function (tracksArray) {
+                const registeredIds = [];
+                for (const trackData of tracksArray) {
+                    const id = this.registerTrack(trackData);
+                    registeredIds.push(id);
+                }
+                return registeredIds;
+            },
+
+            // Utility per logging
+            log: function (message) {
+                console.log('[MOD]', message);
+            },
+
+            // Ottieni informazioni sulla mappa
+            getMapCenter: function () {
+                const center = map.getCenter();
+                return { lat: center.lat, lng: center.lng };
+            },
+
+            // Ottieni il livello di zoom
+            getMapZoom: function () {
+                return map.getZoom();
+            }
+        };
+
+        // Funzione per caricare mod JavaScript
+        async function loadJavaScriptMods() {
+            const enabledMods = JSON.parse(localStorage.getItem('enabled_mods') || '[]');
+
+            if (enabledMods.length === 0) {
+                console.log('[MOD LOADER] No enabled mods found');
+                return;
+            }
+
+            console.log(`[MOD LOADER] Loading ${enabledMods.length} enabled mod(s):`, enabledMods);
+
+            for (const modName of enabledMods) {
+                try {
+                    console.log(`[MOD LOADER] Loading mod: ${modName}`);
+
+                    // Prova a caricare mod.js
+                    const response = await fetch(`mods/${modName}/mod.js`);
+                    if (!response.ok) {
+                        throw new Error(`Failed to fetch mod.js (Status: ${response.status})`);
+                    }
+
+                    const modCode = await response.text();
+                    console.log(`[MOD LOADER] Executing mod "${modName}"...`);
+
+                    // Esegui il codice della mod
+                    const script = document.createElement('script');
+                    script.textContent = modCode;
+                    script.setAttribute('data-mod', modName);
+                    document.head.appendChild(script);
+
+                    console.log(`[MOD LOADER] Mod "${modName}" loaded successfully!`);
+
+                } catch (err) {
+                    console.error(`[MOD LOADER] Error loading mod "${modName}":`, err);
+                    console.warn(`[MOD LOADER] Mod "${modName}" not found or failed to load. Continuing with other mods...`);
+                }
+            }
+
+            console.log('[MOD LOADER] All mods loaded');
+        }
+
+        // Carica le mod quando la mappa è pronta
+        map.whenReady(() => {
+            loadJavaScriptMods();
+        });
+
+
+    </script>
+    <script>
+        // Inizializza la mappa Leaflet
+        let map = L.map('map').setView([41.9028, 12.4964], 13); // Roma di default
+
+        // Aggiungi il layer OpenStreetMap
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19
+        }).addTo(map);
+
+        // Variabili globali
+        let stations = []; // Stazioni reali caricate da OSM
+        let stationMarkers = []; // Marker Leaflet per le stazioni
+        let stationFilters = {
+            train: true,  // Mostra stazioni treno/metro
+            bus: true,    // Mostra stazioni bus
+            tram: true   // Mostra stazioni tram
+        };
+        let customStations = []; // Stazioni personalizzate create dall'utente
+        let customTracks = []; // Binari personalizzati creati dall'utente: {id, type, points: [{lat, lng}], polyline: L.polyline}
+        let customTrackId = 0;
+        let isCreatingTrack = false;
+        let currentTrackPoints = [];
+        let currentTrackType = 'metro';
+        let currentTrackPreview = null;
+        let isAddingCustomStation = false;
+        let currentCustomStationType = 'metro';
+        let metroLines = []; // Array di linee metro: {id, name, color, stations: [], polyline: L.polyline}
+        let busLines = []; // Array di linee bus
+        let tramLines = []; // Array di linee tram
+        let trainLines = []; // Array di linee treni
+        let currentLineId = 0;
+        let isCreatingLine = false;
+        let currentLineType = 'metro'; // metro, bus, tram, train
+        let currentLineStations = []; // Stazioni selezionate per la linea in creazione
+        let currentLineColor = null;
+        let pathfindingMode = false;
+        let pathfindingStartStation = null;
+        let pathfindingEndStation = null;
+        let foundPath = null;
+
+        // Reti di trasporto (strade e binari)
+        let roadNetwork = []; // Strade per bus
+        let tramTracks = []; // Binari tram
+        let trainTracks = []; // Binari treni
+        let metroTracks = []; // Binari metro
+
+        // Colori predefiniti per le linee metro
+        const LINE_COLORS = [
+            '#FF0000', '#0000FF', '#00FF00', '#FFFF00', '#FF00FF',
+            '#00FFFF', '#FFA500', '#800080', '#FFC0CB', '#A52A2A'
+        ];
+
+        // Variabili per i veicoli (bus, tram, metro, treni)
+        let vehicles = []; // Array di veicoli: {type, lineId, lineName, route, currentStationIndex, position, speed, isMoving, isStopped, stopTime, direction, marker}
+        let vehicleAnimationId = null;
+        const BASE_VEHICLE_SPEED = 0.1; // Velocità in metri per frame (ridotta per movimento più realistico)
+        const BASE_STATION_STOP_TIME = 3000; // Tempo di fermata ridotto a 3 secondi
+
+        // Velocità per tipo di veicolo (moltiplicatori)
+        const VEHICLE_SPEED_MULTIPLIERS = {
+            bus: 0.6,      // Bus più lenti
+            tram: 0.7,    // Tram leggermente più lenti
+            metro: 0.9,   // Metro leggermente più veloci
+            train: 0.8    // Treni velocità normale
+        };
+
+        // Emoji per tipo di veicolo
+        const VEHICLE_EMOJIS = {
+            bus: '🚌',
+            tram: '🚊',
+            metro: '🚇',
+            train: '🚂'
+        };
+
+        // Variabili per il controllo del tempo
+        let simulationSpeed = 1.0;
+        let simulationTime = 0;
+        let simulationStartTime = null;
+        let isPaused = false;
+
+        let gameplayFileName = null;
+        let gameplaysFolderHandle = null;
+        let gameplayStartTime = null;
+        let autoLoadStationsInterval = null; // Intervallo per il caricamento automatico
+
+        // Aggiorna posizione mouse sulla mappa
+        map.on('mousemove', (e) => {
+            const lat = e.latlng.lat.toFixed(6);
+            const lng = e.latlng.lng.toFixed(6);
+            document.getElementById('mousePos').textContent = `${lat}, ${lng}`;
+        });
+
+        // Gestione click sulla mappa
+        map.on('click', (e) => {
+            const lat = e.latlng.lat;
+            const lng = e.latlng.lng;
+
+            if (pathfindingMode) {
+                handlePathfindingClick(lat, lng);
+                return;
+            }
+
+            if (isCreatingTrack) {
+                addPointToTrack(lat, lng);
+                return;
+            }
+
+            if (isAddingCustomStation) {
+                addCustomStation(lat, lng);
+                return;
+            }
+
+            if (isCreatingLine) {
+                // Trova la stazione più vicina al click
+                const station = findNearestStation(lat, lng);
+                if (station) {
+                    addStationToLine(station);
+                } else {
+                    // Mostra un messaggio più informativo
+                    console.log('Nessuna stazione trovata vicino al click. Prova a cliccare direttamente sul marker della stazione.');
+                }
+            }
+        });
+
+        // Carica stazioni reali da OpenStreetMap usando Overpass API
+        async function loadRealStations(showAlert = true) {
+            const bounds = map.getBounds();
+            const south = bounds.getSouth();
+            const west = bounds.getWest();
+            const north = bounds.getNorth();
+            const east = bounds.getEast();
+
+            // Query Overpass per stazioni ferroviarie, metro, bus e tram
+            const query = `
+                [out:json][timeout:25];
+                (
+                    node["railway"="station"](${south},${west},${north},${east});
+                    node["railway"="subway_entrance"](${south},${west},${north},${east});
+                    node["public_transport"="station"](${south},${west},${north},${east});
+                    node["station"="subway"](${south},${west},${north},${east});
+                    node["highway"="bus_stop"](${south},${west},${north},${east});
+                    node["public_transport"="platform"]["bus"="yes"](${south},${west},${north},${east});
+                    node["railway"="tram_stop"](${south},${west},${north},${east});
+                    node["public_transport"="platform"]["tram"="yes"](${south},${west},${north},${east});
+                );
+                out body;
+            `;
+
+            try {
+                const button = document.getElementById('load-stations-button');
+                if (button) {
+                    button.textContent = '⏳ Caricamento...';
+                    button.disabled = true;
+                }
+
+                const response = await fetch('https://overpass-api.de/api/interpreter', {
+                    method: 'POST',
+                    body: query
+                });
+
+                const data = await response.json();
+
+                // Rimuovi stazioni esistenti
+                stationMarkers.forEach(marker => map.removeLayer(marker));
+                stations = [];
+                stationMarkers = [];
+
+                // Aggiungi nuove stazioni
+                data.elements.forEach(element => {
+                    if (element.type === 'node' && element.lat && element.lon) {
+                        // Determina il tipo di stazione
+                        let stationType = 'train'; // Default: treno/metro
+                        let emoji = '🚉';
+
+                        const tags = element.tags || {};
+
+                        // Controlla se è una fermata bus
+                        if (tags.highway === 'bus_stop' ||
+                            (tags.public_transport === 'platform' && tags.bus === 'yes') ||
+                            tags.amenity === 'bus_station') {
+                            stationType = 'bus';
+                            emoji = '🚌';
+                        }
+                        // Controlla se è una fermata tram
+                        else if (tags.railway === 'tram_stop' ||
+                            (tags.public_transport === 'platform' && tags.tram === 'yes')) {
+                            stationType = 'tram';
+                            emoji = '🚊';
+                        }
+                        // Treno/Metro (default)
+                        else if (tags.railway === 'station' ||
+                            tags.railway === 'subway_entrance' ||
+                            tags.public_transport === 'station' ||
+                            tags.station === 'subway') {
+                            stationType = 'train';
+                            emoji = '🚉';
+                        }
+
+                        const station = {
+                            id: element.id,
+                            lat: element.lat,
+                            lng: element.lon,
+                            name: tags.name || `Stazione ${element.id}`,
+                            type: stationType,
+                            emoji: emoji
+                        };
+                        stations.push(station);
+
+                        // Crea marker con emoji appropriata
+                        const icon = L.divIcon({
+                            className: 'station-marker station-' + stationType,
+                            html: emoji,
+                            iconSize: [30, 30],
+                            iconAnchor: [15, 15]
+                        });
+
+                        const marker = L.marker([station.lat, station.lng], { icon });
+                        marker.bindPopup(`${emoji} ${station.name}<br><small>Tipo: ${stationType === 'train' ? 'Treno/Metro' : stationType === 'bus' ? 'Bus' : 'Tram'}</small>`);
+
+                        // Aggiungi evento click sul marker per selezionare la stazione quando si crea una linea
+                        marker.on('click', (e) => {
+                            if (isCreatingLine) {
+                                e.originalEvent.stopPropagation(); // Previeni il click sulla mappa
+                                addStationToLine(station);
+                            }
+                        });
+
+                        // Associa il tipo di stazione al marker
+                        marker.stationType = stationType;
+                        marker.station = station;
+
+                        // Applica il filtro corrente
+                        if (!stationFilters[stationType]) {
+                            marker.setOpacity(0);
+                        }
+
+                        marker.addTo(map);
+                        stationMarkers.push(marker);
+                    }
+                });
+
+                updateStationsInfo();
+                if (showAlert) {
+                    alert(`✅ Caricate ${stations.length} stazioni reali!`);
+                }
+            } catch (e) {
+                console.error('Errore nel caricamento delle stazioni:', e);
+                let errorMessage = '❌ Errore nel caricamento delle stazioni.\n\n';
+
+                if (e.name === 'TypeError' && e.message.includes('fetch')) {
+                    errorMessage += '🔴 Problema di connessione:\n';
+                    errorMessage += '• Verifica la tua connessione internet\n';
+                    errorMessage += '• Il server Overpass potrebbe essere temporaneamente non disponibile\n';
+                    errorMessage += '• Prova a ricaricare la pagina';
+                } else if (e.name === 'AbortError' || e.message?.includes('timeout')) {
+                    errorMessage += '⏱️ Timeout della richiesta:\n';
+                    errorMessage += '• L\'area selezionata è troppo grande\n';
+                    errorMessage += '• Prova a zoomare su un\'area più piccola\n';
+                    errorMessage += '• Attendi qualche secondo e riprova';
+                } else if (e.message?.includes('JSON') || e.message?.includes('parse')) {
+                    errorMessage += '📄 Errore nel formato dei dati:\n';
+                    errorMessage += '• I dati ricevuti non sono validi\n';
+                    errorMessage += '• Prova a ricaricare o cambiare area';
+                } else if (e.message?.includes('network') || e.message?.includes('Failed to fetch')) {
+                    errorMessage += '🌐 Errore di rete:\n';
+                    errorMessage += '• Verifica la connessione internet\n';
+                    errorMessage += '• Controlla se il firewall blocca le richieste\n';
+                    errorMessage += '• Prova con un\'altra rete';
+                } else {
+                    errorMessage += `🔴 Errore tecnico:\n`;
+                    errorMessage += `• Tipo: ${e.name || 'Sconosciuto'}\n`;
+                    errorMessage += `• Messaggio: ${e.message || 'Nessun dettaglio disponibile'}\n`;
+                    errorMessage += `• Controlla la console per maggiori dettagli`;
+                }
+
+                if (showAlert) {
+                    alert(errorMessage);
+                }
+            } finally {
+                const button = document.getElementById('load-stations-button');
+                if (button) {
+                    button.textContent = '📥 Carica Stazioni Reali';
+                    button.disabled = false;
+                }
+            }
+        }
+
+        // Carica strade e binari da OpenStreetMap
+        async function loadRoadsAndTracks(showAlert = true) {
+            const bounds = map.getBounds();
+            const south = bounds.getSouth();
+            const west = bounds.getWest();
+            const north = bounds.getNorth();
+            const east = bounds.getEast();
+
+            // Query Overpass per strade e binari
+            const query = `
+                [out:json][timeout:30];
+                (
+                    way["highway"]["highway"!="footway"]["highway"!="path"]["highway"!="cycleway"]["highway"!="steps"](${south},${west},${north},${east});
+                    way["railway"="tram"](${south},${west},${north},${east});
+                    way["railway"="rail"](${south},${west},${north},${east});
+                    way["railway"="subway"](${south},${west},${north},${east});
+                    way["railway"="light_rail"](${south},${west},${north},${east});
+                );
+                (._;>;);
+                out body;
+            `;
+
+            try {
+                const response = await fetch('https://overpass-api.de/api/interpreter', {
+                    method: 'POST',
+                    body: query
+                });
+
+                const data = await response.json();
+
+                // Reset reti
+                roadNetwork = [];
+                tramTracks = [];
+                trainTracks = [];
+                metroTracks = [];
+
+                // Processa i way
+                const nodeMap = new Map();
+                data.elements.forEach(element => {
+                    if (element.type === 'node') {
+                        nodeMap.set(element.id, { lat: element.lat, lng: element.lon });
+                    }
+                });
+
+                data.elements.forEach(element => {
+                    if (element.type === 'way' && element.nodes) {
+                        const points = element.nodes
+                            .map(nodeId => nodeMap.get(nodeId))
+                            .filter(p => p !== undefined)
+                            .map(p => [p.lat, p.lng]);
+
+                        if (points.length < 2) return;
+
+                        const tags = element.tags || {};
+
+                        // Strade per bus
+                        if (tags.highway &&
+                            tags.highway !== 'footway' &&
+                            tags.highway !== 'path' &&
+                            tags.highway !== 'cycleway' &&
+                            tags.highway !== 'steps') {
+                            roadNetwork.push({
+                                id: element.id,
+                                points: points,
+                                type: tags.highway
+                            });
+                        }
+
+                        // Binari tram
+                        if (tags.railway === 'tram') {
+                            tramTracks.push({
+                                id: element.id,
+                                points: points
+                            });
+                        }
+
+                        // Binari treni
+                        if (tags.railway === 'rail') {
+                            trainTracks.push({
+                                id: element.id,
+                                points: points
+                            });
+                        }
+
+                        // Binari metro
+                        if (tags.railway === 'subway' || tags.railway === 'light_rail') {
+                            metroTracks.push({
+                                id: element.id,
+                                points: points
+                            });
+                        }
+                    }
+                });
+
+                if (showAlert) {
+                    alert(`✅ Caricate: ${roadNetwork.length} strade, ${tramTracks.length} binari tram, ${trainTracks.length} binari treni, ${metroTracks.length} binari metro`);
+                }
+            } catch (e) {
+                console.error('Errore nel caricamento di strade e binari:', e);
+                let errorMessage = '❌ Errore nel caricamento di strade e binari.\n\n';
+
+                if (e.name === 'TypeError' && e.message.includes('fetch')) {
+                    errorMessage += '🔴 Problema di connessione:\n';
+                    errorMessage += '• Verifica la tua connessione internet\n';
+                    errorMessage += '• Il server Overpass potrebbe essere temporaneamente non disponibile\n';
+                    errorMessage += '• Prova a ricaricare la pagina';
+                } else if (e.name === 'AbortError' || e.message?.includes('timeout')) {
+                    errorMessage += '⏱️ Timeout della richiesta:\n';
+                    errorMessage += '• L\'area selezionata è troppo grande\n';
+                    errorMessage += '• Prova a zoomare su un\'area più piccola (zoom 14-16)\n';
+                    errorMessage += '• Attendi qualche secondo e riprova';
+                } else if (e.message?.includes('JSON') || e.message?.includes('parse')) {
+                    errorMessage += '📄 Errore nel formato dei dati:\n';
+                    errorMessage += '• I dati ricevuti non sono validi\n';
+                    errorMessage += '• Prova a ricaricare o cambiare area';
+                } else if (e.message?.includes('network') || e.message?.includes('Failed to fetch')) {
+                    errorMessage += '🌐 Errore di rete:\n';
+                    errorMessage += '• Verifica la connessione internet\n';
+                    errorMessage += '• Controlla se il firewall blocca le richieste\n';
+                    errorMessage += '• Prova con un\'altra rete';
+                } else {
+                    errorMessage += `🔴 Errore tecnico:\n`;
+                    errorMessage += `• Tipo: ${e.name || 'Sconosciuto'}\n`;
+                    errorMessage += `• Messaggio: ${e.message || 'Nessun dettaglio disponibile'}\n`;
+                    errorMessage += `• Controlla la console per maggiori dettagli`;
+                }
+
+                if (showAlert) {
+                    alert(errorMessage);
+                }
+            }
+        }
+
+        // Avvia il caricamento automatico delle stazioni ogni 3 minuti
+        function startAutoLoadStations() {
+            // Carica subito le stazioni e le reti
+            loadRealStations(false);
+            loadRoadsAndTracks(false);
+
+            // Poi carica ogni 3 minuti (180000 millisecondi)
+            if (autoLoadStationsInterval) {
+                clearInterval(autoLoadStationsInterval);
+            }
+            autoLoadStationsInterval = setInterval(() => {
+                loadRealStations(false);
+                loadRoadsAndTracks(false);
+            }, 180000); // 3 minuti = 180000 ms
+        }
+
+        // Ferma il caricamento automatico
+        function stopAutoLoadStations() {
+            if (autoLoadStationsInterval) {
+                clearInterval(autoLoadStationsInterval);
+                autoLoadStationsInterval = null;
+            }
+        }
+
+        function findNearestStation(lat, lng) {
+            let minDist = Infinity;
+            let nearestStation = null;
+
+            stations.forEach(station => {
+                const dist = map.distance([lat, lng], [station.lat, station.lng]);
+                if (dist < 1000) { // 1000 metri di tolleranza (1 km)
+                    if (dist < minDist) {
+                        minDist = dist;
+                        nearestStation = station;
+                    }
+                }
+            });
+
+            return nearestStation;
+        }
+
+        function startCreatingLine() {
+            if (stations.length === 0) {
+                alert('⚠️ Impossibile creare una linea!\n\n🔴 Problema: Nessuna stazione caricata\n\n✅ Soluzione:\n• Attendi il caricamento automatico delle stazioni\n• Oppure clicca "Ricarica Stazioni" per forzare il caricamento\n• Assicurati di essere zoomato su un\'area con stazioni');
+                return;
+            }
+
+            // Leggi il tipo di linea selezionato
+            const typeSelect = document.getElementById('line-type-select');
+            currentLineType = typeSelect ? typeSelect.value : 'metro';
+
+            // Verifica che le reti siano caricate
+            const typeName = currentLineType === 'metro' ? 'Metro' : currentLineType === 'bus' ? 'Bus' : currentLineType === 'tram' ? 'Tram' : 'Treno';
+
+            if (currentLineType === 'bus' && roadNetwork.length === 0) {
+                alert(`⚠️ Impossibile creare una linea ${typeName}!\n\n🔴 Problema: Nessuna strada caricata per i bus\n\n✅ Soluzione:\n• Attendi il caricamento automatico delle strade\n• Oppure clicca "Ricarica Strade e Binari"\n• Le strade sono necessarie per calcolare il percorso dei bus`);
+                return;
+            } else if (currentLineType === 'tram' && tramTracks.length === 0) {
+                alert(`⚠️ Impossibile creare una linea ${typeName}!\n\n🔴 Problema: Nessun binario tram caricato\n\n✅ Soluzione:\n• Attendi il caricamento automatico dei binari\n• Oppure clicca "Ricarica Strade e Binari"\n• I binari tram sono necessari per calcolare il percorso`);
+                return;
+            } else if (currentLineType === 'train' && trainTracks.length === 0) {
+                alert(`⚠️ Impossibile creare una linea ${typeName}!\n\n🔴 Problema: Nessun binario treno caricato\n\n✅ Soluzione:\n• Attendi il caricamento automatico dei binari\n• Oppure clicca "Ricarica Strade e Binari"\n• I binari treni sono necessari per calcolare il percorso`);
+                return;
+            } else if (currentLineType === 'metro' && metroTracks.length === 0) {
+                alert(`⚠️ Impossibile creare una linea ${typeName}!\n\n🔴 Problema: Nessun binario metro caricato\n\n✅ Soluzione:\n• Attendi il caricamento automatico dei binari\n• Oppure clicca "Ricarica Strade e Binari"\n• I binari metro sono necessari per calcolare il percorso`);
+                return;
+            }
+
+            isCreatingLine = true;
+            currentLineStations = [];
+
+            // Determina il colore in base al tipo e al numero di linee esistenti
+            const allLines = [...metroLines, ...busLines, ...tramLines, ...trainLines];
+            currentLineColor = LINE_COLORS[allLines.length % LINE_COLORS.length];
+
+            document.getElementById('create-line-button').style.display = 'none';
+            document.getElementById('line-creation-controls').style.display = 'block';
+            document.getElementById('line-creation-info').style.display = 'block';
+            document.getElementById('line-creation-status').textContent = `👆 Clicca sulle stazioni per creare la linea ${typeName}`;
+        }
+
+        function confirmCreatingLine() {
+            if (currentLineStations.length < 2) {
+                const typeName = currentLineType === 'metro' ? 'Metro' : currentLineType === 'bus' ? 'Bus' : currentLineType === 'tram' ? 'Tram' : 'Treno';
+                alert(`⚠️ Impossibile completare la linea ${typeName}!\n\n🔴 Problema: Stazioni insufficienti\n• Stazioni selezionate: ${currentLineStations.length}\n• Stazioni necessarie: almeno 2\n\n✅ Soluzione:\n• Clicca su almeno 2 stazioni sulla mappa\n• Le stazioni devono essere del tipo appropriato per la linea\n• Poi clicca "Conferma" per completare la linea`);
+                return;
+            }
+
+            finishCreatingLine();
+        }
+
+        function cancelCreatingLine() {
+            isCreatingLine = false;
+
+            // Ripristina l'opacità dei marker
+            stationMarkers.forEach(marker => {
+                marker.setOpacity(1.0);
+                marker.setZIndexOffset(0);
+            });
+
+            currentLineStations = [];
+
+            // Rimuovi preview se esiste
+            if (window.currentPreviewLine) {
+                map.removeLayer(window.currentPreviewLine);
+                window.currentPreviewLine = null;
+            }
+
+            document.getElementById('create-line-button').style.display = 'block';
+            document.getElementById('line-creation-controls').style.display = 'none';
+            document.getElementById('line-creation-info').style.display = 'none';
+        }
+
+        function addStationToLine(station) {
+            // Evita duplicati
+            if (currentLineStations.find(s => s.id === station.id)) {
+                console.log('Stazione già aggiunta alla linea');
+                return;
+            }
+
+            currentLineStations.push(station);
+
+            // Evidenzia il marker della stazione selezionata
+            const marker = stationMarkers.find(m => m.station && m.station.id === station.id);
+            if (marker) {
+                marker.setOpacity(0.7);
+                marker.setZIndexOffset(1000); // Porta in primo piano
+            }
+
+            // Aggiorna preview
+            if (currentLineStations.length > 1) {
+                const previewLine = L.polyline(
+                    currentLineStations.map(s => [s.lat, s.lng]),
+                    {
+                        color: currentLineColor,
+                        weight: 5,
+                        opacity: 0.6,
+                        dashArray: '10, 5'
+                    }
+                );
+                previewLine.addTo(map);
+
+                // Rimuovi preview precedente se esiste
+                if (window.currentPreviewLine) {
+                    map.removeLayer(window.currentPreviewLine);
+                }
+                window.currentPreviewLine = previewLine;
+            }
+
+            document.getElementById('line-creation-status').textContent =
+                `✅ ${currentLineStations.length} stazione${currentLineStations.length > 1 ? 'i' : ''} selezionata${currentLineStations.length > 1 ? 'e' : ''}. Clicca "Conferma" per terminare.`;
+        }
+
+        // ========== FUNZIONI PER CREARE BINARI ==========
+
+        function startCreatingTrack() {
+            const typeSelect = document.getElementById('track-type-select');
+            currentTrackType = typeSelect ? typeSelect.value : 'metro';
+            isCreatingTrack = true;
+            currentTrackPoints = [];
+
+            document.getElementById('create-track-button').style.display = 'none';
+            document.getElementById('track-creation-controls').style.display = 'block';
+            document.getElementById('track-creation-info').style.display = 'block';
+
+            const typeName = currentTrackType === 'metro' ? 'Metro' : currentTrackType === 'tram' ? 'Tram' : 'Treno';
+            document.getElementById('track-creation-status').textContent = `👆 Clicca sulla mappa per aggiungere punti al binario ${typeName}. I binari seguiranno le strade visibili sulla mappa.`;
+        }
+
+        function addPointToTrack(lat, lng) {
+            currentTrackPoints.push({ lat, lng });
+
+            // Aggiorna preview
+            if (currentTrackPoints.length > 1) {
+                // Trova il percorso più vicino seguendo le strade
+                const lastPoint = currentTrackPoints[currentTrackPoints.length - 2];
+                const currentPoint = currentTrackPoints[currentTrackPoints.length - 1];
+
+                // Usa le strade per trovare il percorso
+                const path = findPathAlongRoads(lastPoint, currentPoint);
+
+                // Rimuovi preview precedente
+                if (currentTrackPreview) {
+                    map.removeLayer(currentTrackPreview);
+                }
+
+                // Crea preview con tutti i punti
+                const allPoints = [];
+                for (let i = 0; i < currentTrackPoints.length - 1; i++) {
+                    allPoints.push([currentTrackPoints[i].lat, currentTrackPoints[i].lng]);
+                    if (i < currentTrackPoints.length - 1) {
+                        const path = findPathAlongRoads(currentTrackPoints[i], currentTrackPoints[i + 1]);
+                        if (path && path.length > 0) {
+                            allPoints.push(...path.map(p => [p.lat, p.lng]));
+                        }
+                    }
+                }
+                allPoints.push([currentTrackPoints[currentTrackPoints.length - 1].lat, currentTrackPoints[currentTrackPoints.length - 1].lng]);
+
+                const trackColor = currentTrackType === 'metro' ? '#FF0000' : currentTrackType === 'tram' ? '#9C27B0' : '#2196F3';
+                currentTrackPreview = L.polyline(allPoints, {
+                    color: trackColor,
+                    weight: 4,
+                    opacity: 0.7,
+                    dashArray: '10, 5'
+                });
+                currentTrackPreview.addTo(map);
+            }
+
+            const typeName = currentTrackType === 'metro' ? 'Metro' : currentTrackType === 'tram' ? 'Tram' : 'Treno';
+            document.getElementById('track-creation-status').textContent =
+                `✅ ${currentTrackPoints.length} punto${currentTrackPoints.length > 1 ? 'i' : ''} aggiunto${currentTrackPoints.length > 1 ? 'i' : ''}. Clicca "Termina Binario" per completare.`;
+        }
+
+        function findPathAlongRoads(start, end) {
+            // Usa roadNetwork per trovare il percorso più vicino
+            if (roadNetwork.length === 0) {
+                // Se non ci sono strade, usa una linea retta
+                return [{ lat: start.lat, lng: start.lng }, { lat: end.lat, lng: end.lng }];
+            }
+
+            // Trova il punto più vicino sulla rete stradale
+            let nearestStart = null;
+            let nearestEnd = null;
+            let minStartDist = Infinity;
+            let minEndDist = Infinity;
+
+            roadNetwork.forEach(segment => {
+                segment.points.forEach(point => {
+                    const distStart = map.distance([start.lat, start.lng], [point.lat, point.lng]);
+                    const distEnd = map.distance([end.lat, end.lng], [point.lat, point.lng]);
+
+                    if (distStart < minStartDist && distStart < 500) {
+                        minStartDist = distStart;
+                        nearestStart = point;
+                    }
+
+                    if (distEnd < minEndDist && distEnd < 500) {
+                        minEndDist = distEnd;
+                        nearestEnd = point;
+                    }
+                });
+            });
+
+            if (nearestStart && nearestEnd) {
+                // Usa pathfinding per trovare il percorso
+                const path = findShortestPathOnNetwork(nearestStart, nearestEnd, roadNetwork);
+                if (path && path.length > 0) {
+                    return path;
+                }
+            }
+
+            // Fallback: linea retta
+            return [{ lat: start.lat, lng: start.lng }, { lat: end.lat, lng: end.lng }];
+        }
+
+        function findShortestPathOnNetwork(start, end, network) {
+            // Implementazione semplificata: trova il percorso più breve sulla rete
+            // Costruisci un grafo dalla rete
+            const graph = new Map();
+            const pointToKey = (p) => `${p.lat.toFixed(6)},${p.lng.toFixed(6)}`;
+
+            network.forEach(segment => {
+                segment.points.forEach((point, idx) => {
+                    const key = pointToKey(point);
+                    if (!graph.has(key)) {
+                        graph.set(key, []);
+                    }
+
+                    if (idx > 0) {
+                        const prevKey = pointToKey(segment.points[idx - 1]);
+                        const dist = map.distance(point, segment.points[idx - 1]);
+                        if (!graph.has(prevKey)) graph.set(prevKey, []);
+                        graph.get(key).push({ point: segment.points[idx - 1], distance: dist });
+                        graph.get(prevKey).push({ point: point, distance: dist });
+                    }
+                    if (idx < segment.points.length - 1) {
+                        const nextKey = pointToKey(segment.points[idx + 1]);
+                        const dist = map.distance(point, segment.points[idx + 1]);
+                        if (!graph.has(nextKey)) graph.set(nextKey, []);
+                        graph.get(key).push({ point: segment.points[idx + 1], distance: dist });
+                        graph.get(nextKey).push({ point: point, distance: dist });
+                    }
+                });
+            });
+
+            // Trova i punti più vicini
+            const startKey = pointToKey(start);
+            const endKey = pointToKey(end);
+
+            if (!graph.has(startKey) || !graph.has(endKey)) {
+                return null;
+            }
+
+            // Dijkstra
+            const distances = new Map();
+            const previous = new Map();
+            const unvisited = new Set();
+
+            graph.forEach((_, key) => {
+                distances.set(key, Infinity);
+                unvisited.add(key);
+            });
+
+            distances.set(startKey, 0);
+
+            while (unvisited.size > 0) {
+                let current = null;
+                let minDist = Infinity;
+
+                unvisited.forEach(key => {
+                    if (distances.get(key) < minDist) {
+                        minDist = distances.get(key);
+                        current = key;
+                    }
+                });
+
+                if (current === null || current === endKey) break;
+                unvisited.delete(current);
+
+                const neighbors = graph.get(current) || [];
+                neighbors.forEach(neighbor => {
+                    const neighborKey = pointToKey(neighbor.point);
+                    if (!unvisited.has(neighborKey)) return;
+
+                    const alt = distances.get(current) + neighbor.distance;
+                    if (alt < distances.get(neighborKey)) {
+                        distances.set(neighborKey, alt);
+                        previous.set(neighborKey, current);
+                    }
+                });
+            }
+
+            // Ricostruisci il percorso
+            const path = [];
+            let current = endKey;
+            while (current) {
+                const [lat, lng] = current.split(',').map(Number);
+                path.unshift({ lat, lng });
+                current = previous.get(current);
+            }
+
+            return path.length > 0 ? path : null;
+        }
+
+        function finishCreatingTrack() {
+            if (currentTrackPoints.length < 2) {
+                alert('⚠️ Impossibile completare il binario!\n\n🔴 Problema: Punti insufficienti\n• Punti aggiunti: ' + currentTrackPoints.length + '\n• Punti necessari: almeno 2\n\n✅ Soluzione:\n• Clicca sulla mappa per aggiungere almeno 2 punti\n• Poi clicca "Termina Binario" per completare');
+                return;
+            }
+
+            // Calcola il percorso completo seguendo le strade
+            const routePoints = [];
+            for (let i = 0; i < currentTrackPoints.length - 1; i++) {
+                const path = findPathAlongRoads(currentTrackPoints[i], currentTrackPoints[i + 1]);
+                if (i === 0) {
+                    routePoints.push(...path);
+                } else {
+                    if (path.length > 1) {
+                        routePoints.push(...path.slice(1));
+                    } else {
+                        routePoints.push(...path);
+                    }
+                }
+            }
+
+            // Crea il binario
+            const track = {
+                id: customTrackId++,
+                type: currentTrackType,
+                points: routePoints.length > 0 ? routePoints : currentTrackPoints,
+                polyline: null
+            };
+
+            const trackColor = currentTrackType === 'metro' ? '#FF0000' : currentTrackType === 'tram' ? '#9C27B0' : '#2196F3';
+            track.polyline = L.polyline(
+                track.points.map(p => [p.lat, p.lng]),
+                {
+                    color: trackColor,
+                    weight: 5,
+                    opacity: 0.8
+                }
+            );
+            track.polyline.addTo(map);
+            customTracks.push(track);
+
+            // Aggiungi alla rete appropriata
+            if (currentTrackType === 'metro') {
+                metroTracks.push({
+                    id: track.id,
+                    points: track.points
+                });
+            } else if (currentTrackType === 'tram') {
+                tramTracks.push({
+                    id: track.id,
+                    points: track.points
+                });
+            } else if (currentTrackType === 'train') {
+                trainTracks.push({
+                    id: track.id,
+                    points: track.points
+                });
+            }
+
+            // Rimuovi preview
+            if (currentTrackPreview) {
+                map.removeLayer(currentTrackPreview);
+                currentTrackPreview = null;
+            }
+
+            cancelCreatingTrack();
+        }
+
+        function cancelCreatingTrack() {
+            isCreatingTrack = false;
+            currentTrackPoints = [];
+
+            if (currentTrackPreview) {
+                map.removeLayer(currentTrackPreview);
+                currentTrackPreview = null;
+            }
+
+            document.getElementById('create-track-button').style.display = 'block';
+            document.getElementById('track-creation-controls').style.display = 'none';
+            document.getElementById('track-creation-info').style.display = 'none';
+        }
+
+        // ========== FUNZIONI PER AGGIUNGERE STAZIONI PERSONALIZZATE ==========
+
+        function startAddingCustomStation() {
+            const typeSelect = document.getElementById('custom-station-type-select');
+            currentCustomStationType = typeSelect ? typeSelect.value : 'metro';
+            isAddingCustomStation = true;
+
+            document.getElementById('add-custom-station-button').style.display = 'none';
+            document.getElementById('custom-station-info').style.display = 'block';
+
+            const typeName = currentCustomStationType === 'metro' ? 'Metro' : currentCustomStationType === 'tram' ? 'Tram' : 'Treno';
+            document.getElementById('custom-station-status').textContent = `👆 Clicca sulla mappa per posizionare la stazione ${typeName}. La stazione si attaccherà automaticamente al binario più vicino.`;
+        }
+
+        function addCustomStation(lat, lng) {
+            // Trova il binario più vicino del tipo corretto
+            const relevantTracks = customTracks.filter(t => t.type === currentCustomStationType);
+            let nearestTrack = null;
+            let nearestDistance = Infinity;
+            let nearestPoint = null;
+
+            relevantTracks.forEach(track => {
+                track.points.forEach(point => {
+                    const dist = map.distance([lat, lng], [point.lat, point.lng]);
+                    if (dist < nearestDistance && dist < 200) { // 200 metri di tolleranza
+                        nearestDistance = dist;
+                        nearestTrack = track;
+                        nearestPoint = point;
+                    }
+                });
+            });
+
+            // Se non c'è un binario vicino, usa anche i binari caricati da OSM
+            if (!nearestTrack) {
+                const osmTracks = currentCustomStationType === 'metro' ? metroTracks :
+                    currentCustomStationType === 'tram' ? tramTracks : trainTracks;
+
+                osmTracks.forEach(segment => {
+                    if (segment.points) {
+                        segment.points.forEach(point => {
+                            const dist = map.distance([lat, lng], [point.lat, point.lng]);
+                            if (dist < nearestDistance && dist < 200) {
+                                nearestDistance = dist;
+                                nearestPoint = point;
+                            }
+                        });
+                    }
+                });
+            }
+
+            // Se c'è un binario vicino, sposta la stazione sul binario
+            let stationLat = lat;
+            let stationLng = lng;
+            if (nearestPoint) {
+                stationLat = nearestPoint.lat;
+                stationLng = nearestPoint.lng;
+            }
+
+            // Crea la stazione
+            const station = {
+                id: 'custom_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+                lat: stationLat,
+                lng: stationLng,
+                name: `${currentCustomStationType === 'metro' ? 'Stazione Metro' : currentCustomStationType === 'tram' ? 'Fermata Tram' : 'Stazione Treno'} ${customStations.length + 1}`,
+                type: currentCustomStationType,
+                isCustom: true,
+                attachedTrackId: nearestTrack ? nearestTrack.id : null
+            };
+
+            customStations.push(station);
+
+            // Crea marker
+            const emoji = currentCustomStationType === 'metro' ? '🚇' : currentCustomStationType === 'tram' ? '🚊' : '🚉';
+            const stationColor = currentCustomStationType === 'metro' ? '#FF0000' : currentCustomStationType === 'tram' ? '#9C27B0' : '#2196F3';
+
+            const icon = L.divIcon({
+                className: 'station-marker-wrapper',
+                html: `
+                    <div class="station-marker" style="background: ${stationColor}; border-color: ${stationColor};">
+                        ${emoji}
+                    </div>
+                `,
+                iconSize: [30, 30],
+                iconAnchor: [15, 15],
+                popupAnchor: [0, -15]
+            });
+
+            const marker = L.marker([station.lat, station.lng], { icon });
+            marker.bindPopup(`<strong>${station.name}</strong><br>${emoji} ${currentCustomStationType === 'metro' ? 'Metro' : currentCustomStationType === 'tram' ? 'Tram' : 'Treno'}`);
+
+            // Associa il tipo di stazione al marker (converti metro in train per i filtri)
+            const filterType = currentCustomStationType === 'metro' ? 'train' : currentCustomStationType;
+            marker.stationType = filterType;
+            marker.station = station;
+
+            // Applica il filtro corrente
+            if (!stationFilters[filterType]) {
+                marker.setOpacity(0);
+            }
+
+            marker.addTo(map);
+            station.marker = marker;
+
+            // Aggiungi anche all'array stations per compatibilità
+            stations.push(station);
+            stationMarkers.push(marker);
+
+            updateStationsInfo();
+
+            // Reset modalità
+            isAddingCustomStation = false;
+            document.getElementById('add-custom-station-button').style.display = 'block';
+            document.getElementById('custom-station-info').style.display = 'none';
+
+            const typeName = currentCustomStationType === 'metro' ? 'Metro' : currentCustomStationType === 'tram' ? 'Tram' : 'Treno';
+            alert(`✅ Stazione ${typeName} aggiunta!\n\n📍 Posizione: ${station.lat.toFixed(6)}, ${station.lng.toFixed(6)}\n${nearestTrack ? '🔗 Attaccata al binario più vicino' : '⚠️ Nessun binario vicino trovato'}`);
+        }
+
+        // Calcola il percorso più breve tra due stazioni usando pathfinding sulla rete
+        function findShortestPath(startStation, endStation, lineType) {
+            let network = [];
+
+            // Seleziona la rete appropriata
+            if (lineType === 'bus') {
+                network = roadNetwork;
+            } else if (lineType === 'tram') {
+                network = tramTracks;
+            } else if (lineType === 'train') {
+                network = trainTracks;
+            } else if (lineType === 'metro') {
+                network = metroTracks;
+            }
+
+            if (network.length === 0) {
+                // Se non ci sono reti, usa percorso diretto
+                return [[startStation.lat, startStation.lng], [endStation.lat, endStation.lng]];
+            }
+
+            // Costruisci un grafo dalla rete
+            const graph = new Map(); // Map<pointKey, Array<{point, distance, segment}>>
+            const pointToKey = (p) => `${p[0].toFixed(6)},${p[1].toFixed(6)}`;
+            const MAX_CONNECTION_DIST = 50; // Metri
+
+            // Aggiungi tutti i punti della rete al grafo
+            network.forEach(segment => {
+                segment.points.forEach((point, idx) => {
+                    const key = pointToKey(point);
+                    if (!graph.has(key)) {
+                        graph.set(key, []);
+                    }
+
+                    // Collega ai punti adiacenti nello stesso segmento
+                    if (idx > 0) {
+                        const prevKey = pointToKey(segment.points[idx - 1]);
+                        const dist = map.distance(point, segment.points[idx - 1]);
+                        if (!graph.has(prevKey)) graph.set(prevKey, []);
+                        graph.get(key).push({ point: segment.points[idx - 1], distance: dist, segment: segment.id });
+                        graph.get(prevKey).push({ point: point, distance: dist, segment: segment.id });
+                    }
+                    if (idx < segment.points.length - 1) {
+                        const nextKey = pointToKey(segment.points[idx + 1]);
+                        const dist = map.distance(point, segment.points[idx + 1]);
+                        if (!graph.has(nextKey)) graph.set(nextKey, []);
+                        graph.get(key).push({ point: segment.points[idx + 1], distance: dist, segment: segment.id });
+                        graph.get(nextKey).push({ point: point, distance: dist, segment: segment.id });
+                    }
+
+                    // Collega a punti vicini su altri segmenti (per incroci)
+                    network.forEach(otherSegment => {
+                        if (otherSegment.id === segment.id) return;
+                        otherSegment.points.forEach(otherPoint => {
+                            const dist = map.distance(point, otherPoint);
+                            if (dist < MAX_CONNECTION_DIST) {
+                                const otherKey = pointToKey(otherPoint);
+                                if (!graph.has(otherKey)) graph.set(otherKey, []);
+                                if (!graph.get(key).find(n => pointToKey(n.point) === otherKey)) {
+                                    graph.get(key).push({ point: otherPoint, distance: dist, segment: otherSegment.id });
+                                }
+                            }
+                        });
+                    });
+                });
+            });
+
+            // Trova i punti più vicini alle stazioni sulla rete
+            let startKey = null;
+            let endKey = null;
+            let minStartDist = Infinity;
+            let minEndDist = Infinity;
+            const SEARCH_RADIUS = 200; // Metri
+
+            graph.forEach((neighbors, key) => {
+                const point = neighbors[0]?.point || key.split(',').map(Number);
+                const distStart = map.distance([startStation.lat, startStation.lng], point);
+                const distEnd = map.distance([endStation.lat, endStation.lng], point);
+
+                if (distStart < minStartDist && distStart < SEARCH_RADIUS) {
+                    minStartDist = distStart;
+                    startKey = key;
+                }
+
+                if (distEnd < minEndDist && distEnd < SEARCH_RADIUS) {
+                    minEndDist = distEnd;
+                    endKey = key;
+                }
+            });
+
+            // Se non troviamo punti vicini, usa percorso diretto
+            if (!startKey || !endKey || minStartDist > SEARCH_RADIUS || minEndDist > SEARCH_RADIUS) {
+                return [[startStation.lat, startStation.lng], [endStation.lat, endStation.lng]];
+            }
+
+            // Pathfinding con Dijkstra
+            const distances = new Map();
+            const previous = new Map();
+            const unvisited = new Set();
+
+            graph.forEach((neighbors, key) => {
+                distances.set(key, Infinity);
+                previous.set(key, null);
+                unvisited.add(key);
+            });
+
+            distances.set(startKey, 0);
+
+            while (unvisited.size > 0) {
+                let current = null;
+                let minDist = Infinity;
+
+                unvisited.forEach(key => {
+                    const dist = distances.get(key);
+                    if (dist < minDist) {
+                        minDist = dist;
+                        current = key;
+                    }
+                });
+
+                if (!current || minDist === Infinity || current === endKey) break;
+                unvisited.delete(current);
+
+                if (current === endKey) break;
+
+                const neighbors = graph.get(current) || [];
+                neighbors.forEach(({ point, distance }) => {
+                    const neighborKey = pointToKey(point);
+                    if (!unvisited.has(neighborKey)) return;
+
+                    const alt = distances.get(current) + distance;
+                    if (alt < distances.get(neighborKey)) {
+                        distances.set(neighborKey, alt);
+                        previous.set(neighborKey, current);
+                    }
+                });
+            }
+
+            // Ricostruisci il percorso
+            const path = [[endStation.lat, endStation.lng]];
+            let current = endKey;
+            const pathKeys = [];
+
+            while (current) {
+                pathKeys.unshift(current);
+                current = previous.get(current);
+            }
+
+            // Converti le chiavi in punti
+            pathKeys.forEach(key => {
+                const neighbors = graph.get(key);
+                if (neighbors && neighbors.length > 0) {
+                    path.push(neighbors[0].point);
+                }
+            });
+
+            path.unshift([startStation.lat, startStation.lng]);
+
+            // Se il pathfinding non ha trovato un percorso valido, usa percorso diretto
+            if (path.length < 2 || distances.get(endKey) === Infinity) {
+                return [[startStation.lat, startStation.lng], [endStation.lat, endStation.lng]];
+            }
+
+            return path;
+        }
+
+        function finishCreatingLine() {
+            const typeName = currentLineType === 'metro' ? 'Metro' : currentLineType === 'bus' ? 'Bus' : currentLineType === 'tram' ? 'Tram' : 'Treno';
+            const allLines = [...metroLines, ...busLines, ...tramLines, ...trainLines];
+            const lineName = prompt(`📝 Inserisci il nome della linea ${typeName}:`, `${typeName} ${allLines.length + 1}`);
+            if (!lineName) {
+                cancelCreatingLine();
+                return;
+            }
+
+            // Rimuovi preview
+            if (window.currentPreviewLine) {
+                map.removeLayer(window.currentPreviewLine);
+                window.currentPreviewLine = null;
+            }
+
+            // Calcola il percorso usando pathfinding automatico sulle reti reali
+            const routePoints = [];
+            const statusEl = document.getElementById('line-creation-status');
+            if (statusEl) {
+                statusEl.textContent = '⏳ Calcolo percorso ottimale con pathfinding...';
+            }
+
+            for (let i = 0; i < currentLineStations.length - 1; i++) {
+                const start = currentLineStations[i];
+                const end = currentLineStations[i + 1];
+
+                // Usa pathfinding per trovare il percorso più breve sulla rete
+                const segmentPath = findShortestPath(start, end, currentLineType);
+
+                if (i === 0) {
+                    routePoints.push(...segmentPath);
+                } else {
+                    // Evita duplicati rimuovendo il primo punto (è l'ultimo del segmento precedente)
+                    if (segmentPath.length > 1) {
+                        routePoints.push(...segmentPath.slice(1));
+                    } else {
+                        routePoints.push(...segmentPath);
+                    }
+                }
+            }
+
+            if (statusEl) {
+                statusEl.textContent = `✅ Percorso ottimale calcolato (${routePoints.length} punti)`;
+            }
+
+            // Crea la linea
+            const line = {
+                id: currentLineId++,
+                name: lineName,
+                type: currentLineType,
+                color: currentLineColor,
+                stations: [...currentLineStations],
+                route: routePoints
+            };
+
+            // Crea polyline per la linea usando il percorso calcolato
+            const polyline = L.polyline(
+                routePoints.length > 0 ? routePoints : line.stations.map(s => [s.lat, s.lng]),
+                {
+                    color: line.color,
+                    weight: 6,
+                    opacity: 0.8
+                }
+            );
+            polyline.addTo(map);
+            line.polyline = polyline;
+
+            // Aggiungi alla lista appropriata
+            if (currentLineType === 'metro') {
+                metroLines.push(line);
+            } else if (currentLineType === 'bus') {
+                busLines.push(line);
+            } else if (currentLineType === 'tram') {
+                tramLines.push(line);
+            } else if (currentLineType === 'train') {
+                trainLines.push(line);
+            }
+
+            updateMetroLinesList();
+            cancelCreatingLine();
+        }
+
+        function updateStationsInfo() {
+            const countEl = document.getElementById('stations-count');
+            if (countEl) {
+                countEl.textContent = stations.length;
+            }
+
+            // Conta per tipo
+            const trainCount = stations.filter(s => s.type === 'train').length;
+            const busCount = stations.filter(s => s.type === 'bus').length;
+            const tramCount = stations.filter(s => s.type === 'tram').length;
+
+            const trainEl = document.getElementById('stations-train');
+            const busEl = document.getElementById('stations-bus');
+            const tramEl = document.getElementById('stations-tram');
+
+            if (trainEl) trainEl.textContent = trainCount;
+            if (busEl) busEl.textContent = busCount;
+            if (tramEl) tramEl.textContent = tramCount;
+        }
+
+        function updateMetroLinesList() {
+            const listEl = document.getElementById('metro-lines-list');
+            listEl.innerHTML = '';
+
+            const allLines = [
+                ...metroLines.map(l => ({ ...l, type: 'metro', emoji: '🚇' })),
+                ...busLines.map(l => ({ ...l, type: 'bus', emoji: '🚌' })),
+                ...tramLines.map(l => ({ ...l, type: 'tram', emoji: '🚊' })),
+                ...trainLines.map(l => ({ ...l, type: 'train', emoji: '🚂' }))
+            ];
+
+            if (allLines.length === 0) {
+                listEl.innerHTML = '<div style="padding: 10px; color: rgba(44, 62, 80, 0.6); text-align: center; font-size: 0.9em;">Nessuna linea creata</div>';
+                return;
+            }
+
+            allLines.forEach((line, index) => {
+                const startStation = line.stations.length > 0 ? line.stations[0] : null;
+                const endStation = line.stations.length > 0 ? line.stations[line.stations.length - 1] : null;
+                const startName = startStation ? (startStation.name || `Stazione ${startStation.id}`) : 'N/A';
+                const endName = endStation ? (endStation.name || `Stazione ${endStation.id}`) : 'N/A';
+
+                const lineDiv = document.createElement('div');
+                lineDiv.style.cssText = 'padding: 12px; margin-bottom: 8px; background: rgba(255, 255, 255, 0.6); border-radius: 10px; border-left: 5px solid ' + line.color + '; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);';
+
+                // Crea percorso completo delle stazioni
+                const stationsPath = line.stations.map((s, idx) => {
+                    const stationName = s.name || `Stazione ${s.id}`;
+                    if (idx === 0) {
+                        return `<strong>${stationName}</strong>`;
+                    } else if (idx === line.stations.length - 1) {
+                        return `<strong>${stationName}</strong>`;
+                    } else {
+                        return stationName;
+                    }
+                }).join(' → ');
+
+                lineDiv.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                        <div style="flex: 1;">
+                            <div style="font-weight: bold; font-size: 1.1em; color: #2c3e50; margin-bottom: 5px;">
+                                🚇 ${line.name}
+                            </div>
+                            <div style="font-size: 0.85em; color: rgba(44, 62, 80, 0.8); margin-bottom: 3px;">
+                                🏁 <strong>Inizio:</strong> ${startName}
+                            </div>
+                            <div style="font-size: 0.85em; color: rgba(44, 62, 80, 0.8); margin-bottom: 5px;">
+                                🏁 <strong>Capolinea:</strong> ${endName}
+                            </div>
+                            <div style="font-size: 0.75em; color: rgba(44, 62, 80, 0.7); margin-top: 8px; padding: 8px; background: rgba(255, 255, 255, 0.4); border-radius: 5px; max-height: 80px; overflow-y: auto;">
+                                <strong>Percorso completo:</strong><br>
+                                ${stationsPath}
+                            </div>
+                            <div style="font-size: 0.75em; color: rgba(44, 62, 80, 0.6); margin-top: 5px;">
+                                📊 ${line.stations.length} stazione${line.stations.length !== 1 ? 'i' : ''}
+                            </div>
+                        </div>
+                        <button onclick="deleteLine(${line.id})" style="background: rgba(244, 67, 54, 0.6); border: none; border-radius: 5px; padding: 8px 12px; color: white; cursor: pointer; margin-left: 10px; transition: all 0.2s;" onmouseover="this.style.background='rgba(244, 67, 54, 0.8)'" onmouseout="this.style.background='rgba(244, 67, 54, 0.6)'">🗑️</button>
+                    </div>
+                `;
+                listEl.appendChild(lineDiv);
+            });
+        }
+
+        function deleteLine(lineId) {
+            // Cerca in tutte le liste
+            let line = metroLines.find(l => l.id === lineId);
+            let list = metroLines;
+
+            if (!line) {
+                line = busLines.find(l => l.id === lineId);
+                list = busLines;
+            }
+            if (!line) {
+                line = tramLines.find(l => l.id === lineId);
+                list = tramLines;
+            }
+            if (!line) {
+                line = trainLines.find(l => l.id === lineId);
+                list = trainLines;
+            }
+
+            if (line && confirm(`⚠️ Eliminare la linea "${line.name}"?`)) {
+                if (line.polyline) {
+                    map.removeLayer(line.polyline);
+                }
+
+                if (list === metroLines) {
+                    metroLines = metroLines.filter(l => l.id !== lineId);
+                } else if (list === busLines) {
+                    busLines = busLines.filter(l => l.id !== lineId);
+                } else if (list === tramLines) {
+                    tramLines = tramLines.filter(l => l.id !== lineId);
+                } else if (list === trainLines) {
+                    trainLines = trainLines.filter(l => l.id !== lineId);
+                }
+
+                updateMetroLinesList();
+            }
+        }
+
+        // Pathfinding
+        function togglePathfinding() {
+            pathfindingMode = !pathfindingMode;
+            const button = document.getElementById('pathfinding-button');
+            const info = document.getElementById('pathfinding-info');
+
+            if (pathfindingMode) {
+                button.classList.add('active');
+                info.style.display = 'block';
+                pathfindingStartStation = null;
+                pathfindingEndStation = null;
+                document.getElementById('pathfinding-status').textContent = '👆 Clicca su una stazione di partenza';
+            } else {
+                button.classList.remove('active');
+                info.style.display = 'none';
+                if (foundPath) {
+                    foundPath.forEach(layer => map.removeLayer(layer));
+                    foundPath = null;
+                }
+            }
+        }
+
+        function handlePathfindingClick(lat, lng) {
+            // Trova la stazione più vicina
+            const station = findNearestStation(lat, lng);
+            if (!station) {
+                alert('⚠️ Stazione non trovata!\n\n🔴 Problema: Nessuna stazione nelle vicinanze\n\n✅ Soluzione:\n• Clicca direttamente sul marker di una stazione (🚉 🚌 🚊)\n• Assicurati di aver caricato le stazioni\n• Verifica di essere zoomato su un\'area con stazioni');
+                return;
+            }
+
+            if (!pathfindingStartStation) {
+                pathfindingStartStation = station;
+                document.getElementById('pathfinding-status').textContent = '👆 Clicca su una stazione di arrivo';
+            } else {
+                pathfindingEndStation = station;
+                findPath();
+            }
+        }
+
+        function findPath() {
+            // Implementazione semplificata del pathfinding
+            // Usa Dijkstra per trovare il percorso più breve
+            const graph = buildGraph();
+            const path = dijkstra(graph, pathfindingStartStation, pathfindingEndStation);
+
+            if (path && path.length > 0) {
+                foundPath = [];
+                for (let i = 0; i < path.length - 1; i++) {
+                    const line = L.polyline(
+                        [[path[i].lat, path[i].lng], [path[i + 1].lat, path[i + 1].lng]],
+                        {
+                            color: '#FFD700',
+                            weight: 5,
+                            opacity: 0.8
+                        }
+                    ).addTo(map);
+                    foundPath.push(line);
+                }
+                document.getElementById('pathfinding-status').textContent = `✅ Percorso trovato (${path.length} stazioni)`;
+            } else {
+                document.getElementById('pathfinding-status').textContent = '❌ Percorso non trovato';
+                alert('⚠️ Percorso non trovato!\n\n🔴 Problema: Non esiste un percorso tra le stazioni selezionate\n\n✅ Possibili cause:\n• Le stazioni non sono collegate da linee metro/bus/tram/treni\n• Le linee non sono state create tra queste stazioni\n• Le stazioni sono troppo distanti\n\n💡 Suggerimento:\n• Crea una linea che collega queste stazioni\n• Oppure seleziona stazioni già collegate da linee esistenti');
+            }
+        }
+
+        function buildGraph() {
+            const graph = new Map();
+
+            stations.forEach(station => {
+                graph.set(station, []);
+            });
+
+            // Collega stazioni attraverso le linee metro
+            metroLines.forEach(line => {
+                for (let i = 0; i < line.stations.length - 1; i++) {
+                    const station1 = line.stations[i];
+                    const station2 = line.stations[i + 1];
+                    const dist = map.distance([station1.lat, station1.lng], [station2.lat, station2.lng]);
+
+                    // Aggiungi connessione in entrambe le direzioni
+                    const neighbors1 = graph.get(station1) || [];
+                    if (!neighbors1.find(n => n.station.id === station2.id)) {
+                        neighbors1.push({ station: station2, distance: dist, line: line });
+                        graph.set(station1, neighbors1);
+                    }
+
+                    const neighbors2 = graph.get(station2) || [];
+                    if (!neighbors2.find(n => n.station.id === station1.id)) {
+                        neighbors2.push({ station: station1, distance: dist, line: line });
+                        graph.set(station2, neighbors2);
+                    }
+                }
+            });
+
+            return graph;
+        }
+
+        function dijkstra(graph, start, end) {
+            const distances = new Map();
+            const previous = new Map();
+            const unvisited = new Set();
+
+            stations.forEach(station => {
+                distances.set(station, Infinity);
+                previous.set(station, null);
+                unvisited.add(station);
+            });
+
+            distances.set(start, 0);
+
+            while (unvisited.size > 0) {
+                let current = null;
+                let minDist = Infinity;
+
+                unvisited.forEach(station => {
+                    const dist = distances.get(station);
+                    if (dist < minDist) {
+                        minDist = dist;
+                        current = station;
+                    }
+                });
+
+                if (!current || minDist === Infinity) break;
+                unvisited.delete(current);
+
+                if (current === end) {
+                    const path = [];
+                    let node = end;
+                    while (node) {
+                        path.unshift(node);
+                        node = previous.get(node);
+                    }
+                    return path;
+                }
+
+                const neighbors = graph.get(current) || [];
+                neighbors.forEach(({ station, distance }) => {
+                    const alt = distances.get(current) + distance;
+                    if (alt < distances.get(station)) {
+                        distances.set(station, alt);
+                        previous.set(station, current);
+                    }
+                });
+            }
+
+            return null;
+        }
+
+        // Funzioni per i veicoli
+        function addVehicle() {
+            // Leggi il tipo di veicolo selezionato
+            const typeSelect = document.getElementById('vehicle-type-select');
+            const vehicleType = typeSelect ? typeSelect.value : 'train';
+
+            // Trova le linee appropriate per il tipo di veicolo
+            let availableLines = [];
+            if (vehicleType === 'bus') {
+                availableLines = busLines;
+            } else if (vehicleType === 'tram') {
+                availableLines = tramLines;
+            } else if (vehicleType === 'metro') {
+                availableLines = metroLines;
+            } else if (vehicleType === 'train') {
+                availableLines = trainLines;
+            }
+
+            if (availableLines.length === 0) {
+                const typeName = vehicleType === 'bus' ? 'Bus' : vehicleType === 'tram' ? 'Tram' : vehicleType === 'metro' ? 'Metro' : 'Treno';
+                alert(`⚠️ Impossibile aggiungere un ${typeName}!\n\n🔴 Problema: Nessuna linea ${typeName} creata\n\n✅ Soluzione:\n• Crea prima almeno una linea ${typeName}\n• Seleziona "${typeName}" dal menu tipo linea\n• Crea la linea e poi aggiungi il veicolo`);
+                return;
+            }
+
+            // Seleziona la linea per il veicolo
+            const lineOptions = availableLines.map((line, index) => `${index + 1}. ${line.name}`).join('\n');
+            const vehicleEmoji = VEHICLE_EMOJIS[vehicleType];
+            const vehicleName = vehicleType === 'bus' ? 'Bus' : vehicleType === 'tram' ? 'Tram' : vehicleType === 'metro' ? 'Metro' : 'Treno';
+            const selection = prompt(`${vehicleEmoji} Seleziona la linea per il ${vehicleName}:\n${lineOptions}\n\nInserisci il numero:`, '1');
+            const lineIndex = parseInt(selection) - 1;
+
+            if (isNaN(lineIndex) || lineIndex < 0 || lineIndex >= availableLines.length) {
+                return;
+            }
+
+            const selectedLine = availableLines[lineIndex];
+            if (!selectedLine) {
+                alert('⚠️ Linea non valida!\n\n🔴 Problema: La linea selezionata non esiste più\n\n✅ Soluzione:\n• Seleziona un\'altra linea dalla lista');
+                return;
+            }
+            if (selectedLine.stations.length < 2) {
+                alert(`⚠️ Linea "${selectedLine.name}" non valida!\n\n🔴 Problema: Stazioni insufficienti\n• Stazioni presenti: ${selectedLine.stations.length}\n• Stazioni necessarie: almeno 2\n\n✅ Soluzione:\n• La linea deve avere almeno 2 stazioni per far viaggiare un veicolo\n• Modifica la linea o seleziona un\'altra linea`);
+                return;
+            }
+
+            // Usa il percorso della linea se disponibile, altrimenti usa le stazioni
+            let route = null;
+            if (selectedLine.route && selectedLine.route.length > 0) {
+                // Converti route da array di [lat, lng] a oggetti {lat, lng}
+                route = selectedLine.route.map(p => {
+                    if (Array.isArray(p)) {
+                        return { lat: p[0], lng: p[1] };
+                    }
+                    return p;
+                });
+            } else {
+                route = selectedLine.stations;
+            }
+
+            // Posizione iniziale: usa il primo punto del route se disponibile, altrimenti la prima stazione
+            const startPoint = route && route.length > 0
+                ? (Array.isArray(route[0]) ? { lat: route[0][0], lng: route[0][1] } : route[0])
+                : { lat: selectedLine.stations[0].lat, lng: selectedLine.stations[0].lng };
+
+            // Crea un veicolo che segue la linea
+            const vehicle = {
+                type: vehicleType,
+                lineId: selectedLine.id,
+                lineName: selectedLine.name,
+                route: route,
+                currentStationIndex: 0,
+                position: { lat: startPoint.lat, lng: startPoint.lng },
+                speed: BASE_VEHICLE_SPEED * (VEHICLE_SPEED_MULTIPLIERS[vehicleType] || 1.0),
+                isMoving: false,
+                isStopped: true,
+                stopTime: 0,
+                direction: 1,
+                marker: null
+            };
+
+            // Trova il colore della linea
+            const lineColor = selectedLine.color || '#FFC107';
+            const emoji = VEHICLE_EMOJIS[vehicleType];
+
+            // Crea icona personalizzata con colore della linea
+            const iconHtml = `
+                <div class="train-marker" style="border-color: ${lineColor}; box-shadow: 0 3px 12px rgba(0, 0, 0, 0.4), 0 0 0 3px ${lineColor}40;">
+                    ${emoji}
+                </div>
+            `;
+
+            const icon = L.divIcon({
+                className: 'train-marker-wrapper',
+                html: iconHtml,
+                iconSize: [32, 32],
+                iconAnchor: [16, 16],
+                popupAnchor: [0, -16]
+            });
+
+            vehicle.marker = L.marker([vehicle.position.lat, vehicle.position.lng], { icon });
+            vehicle.marker.bindPopup(`${emoji} ${vehicleName} sulla <strong style="color: ${lineColor}">${vehicle.lineName}</strong>`);
+            vehicle.marker.addTo(map);
+            vehicles.push(vehicle);
+            updateVehiclesInfo();
+        }
+
+        function startVehicles() {
+            if (vehicles.length === 0) {
+                alert('⚠️ Aggiungi almeno un veicolo!\n\n🔴 Problema: Nessun veicolo presente\n\n✅ Soluzione:\n• Seleziona un tipo di veicolo (Bus, Tram, Metro, Treno)\n• Clicca "Aggiungi Veicolo"\n• Seleziona una linea appropriata');
+                return;
+            }
+
+            vehicles.forEach(vehicle => {
+                vehicle.isMoving = true;
+                vehicle.isStopped = false;
+            });
+
+            if (!vehicleAnimationId) {
+                animateVehicles();
+            }
+        }
+
+        function stopVehicles() {
+            vehicles.forEach(vehicle => {
+                vehicle.isMoving = false;
+                vehicle.isStopped = true;
+            });
+
+            if (vehicleAnimationId) {
+                cancelAnimationFrame(vehicleAnimationId);
+                vehicleAnimationId = null;
+            }
+        }
+
+        function deleteVehicle() {
+            if (vehicles.length === 0) {
+                alert('⚠️ Nessun veicolo da eliminare!\n\n🔴 Problema: Non ci sono veicoli presenti\n\n✅ Soluzione:\n• Aggiungi almeno un veicolo prima di poterlo eliminare');
+                return;
+            }
+
+            // Crea lista dei veicoli disponibili
+            const vehicleList = vehicles.map((vehicle, index) => {
+                const emoji = VEHICLE_EMOJIS[vehicle.type] || '🚂';
+                const vehicleName = vehicle.type === 'bus' ? 'Bus' : vehicle.type === 'tram' ? 'Tram' : vehicle.type === 'metro' ? 'Metro' : 'Treno';
+                return `${index + 1}. ${emoji} ${vehicleName} - Linea: ${vehicle.lineName}`;
+            }).join('\n');
+
+            const selection = prompt(`🗑️ Seleziona il veicolo da eliminare:\n${vehicleList}\n\nInserisci il numero:`, '1');
+            const vehicleIndex = parseInt(selection) - 1;
+
+            if (isNaN(vehicleIndex) || vehicleIndex < 0 || vehicleIndex >= vehicles.length) {
+                return;
+            }
+
+            const vehicle = vehicles[vehicleIndex];
+            const vehicleName = vehicle.type === 'bus' ? 'Bus' : vehicle.type === 'tram' ? 'Tram' : vehicle.type === 'metro' ? 'Metro' : 'Treno';
+
+            if (confirm(`⚠️ Eliminare il ${vehicleName} sulla linea "${vehicle.lineName}"?`)) {
+                // Ferma il veicolo se sta viaggiando
+                vehicle.isMoving = false;
+                vehicle.isStopped = true;
+
+                // Rimuovi il marker dalla mappa
+                if (vehicle.marker) {
+                    map.removeLayer(vehicle.marker);
+                }
+
+                // Rimuovi il veicolo dall'array
+                vehicles.splice(vehicleIndex, 1);
+
+                // Aggiorna le informazioni
+                updateVehiclesInfo();
+
+                alert(`✅ ${vehicleName} eliminato con successo!`);
+            }
+        }
+
+        function animateVehicles() {
+            const now = Date.now();
+            if (!simulationStartTime) {
+                simulationStartTime = now;
+            }
+
+            if (!isPaused && simulationSpeed > 0) {
+                simulationTime += (now - (simulationStartTime || now)) * simulationSpeed / 1000;
+                simulationStartTime = now;
+                updateTimeDisplay();
+            }
+
+            vehicles.forEach(vehicle => {
+                if (!vehicle.isMoving) {
+                    return;
+                }
+
+                // Se il veicolo è fermo ma deve muoversi, aspetta
+                if (vehicle.isStopped) {
+                    return;
+                }
+
+                // Se il veicolo ha un percorso (route), usa quello, altrimenti trova la linea e usa le stazioni
+                let route = null;
+
+                if (vehicle.route && vehicle.route.length > 0) {
+                    // Converti route da array di [lat, lng] a oggetti {lat, lng}
+                    route = vehicle.route.map(p => {
+                        if (Array.isArray(p)) {
+                            return { lat: p[0], lng: p[1] };
+                        }
+                        return p;
+                    });
+                } else {
+                    // Se non c'è route, trova la linea e usa le stazioni
+                    let line = null;
+                    if (vehicle.type === 'bus') {
+                        line = busLines.find(l => l.id === vehicle.lineId);
+                    } else if (vehicle.type === 'tram') {
+                        line = tramLines.find(l => l.id === vehicle.lineId);
+                    } else if (vehicle.type === 'metro') {
+                        line = metroLines.find(l => l.id === vehicle.lineId);
+                    } else if (vehicle.type === 'train') {
+                        line = trainLines.find(l => l.id === vehicle.lineId);
+                    }
+                    route = line ? line.stations : [];
+                }
+
+                if (!route || route.length === 0) {
+                    console.warn(`Veicolo ${vehicle.type} sulla linea ${vehicle.lineName} non ha un route valido`, {
+                        hasRoute: !!vehicle.route,
+                        routeLength: vehicle.route ? vehicle.route.length : 0,
+                        lineRoute: selectedLine ? (selectedLine.route ? selectedLine.route.length : 0) : 'no line'
+                    });
+                    return;
+                }
+
+                // Assicurati che l'indice sia valido
+                if (vehicle.currentStationIndex < 0 || vehicle.currentStationIndex >= route.length) {
+                    console.log(`Correggendo indice per veicolo ${vehicle.type}: ${vehicle.currentStationIndex} -> 0 (route length: ${route.length})`);
+                    vehicle.currentStationIndex = 0;
+                }
+
+                const currentPoint = route[vehicle.currentStationIndex];
+                if (!currentPoint || (currentPoint.lat === undefined) || (currentPoint.lng === undefined)) {
+                    console.warn(`Punto corrente non valido per veicolo ${vehicle.type}`, currentPoint, 'route:', route);
+                    return;
+                }
+
+                const nextPointIndex = vehicle.currentStationIndex + vehicle.direction;
+
+                if (nextPointIndex < 0 || nextPointIndex >= route.length) {
+                    // Fine del percorso, inverti direzione e continua
+                    vehicle.direction *= -1;
+                    // Aggiorna l'indice per evitare di uscire dai limiti
+                    vehicle.currentStationIndex = vehicle.direction > 0 ? 0 : route.length - 1;
+                    // Continua a muoversi nella direzione opposta
+                    vehicle.isStopped = false;
+                    return;
+                }
+
+                const nextPoint = route[nextPointIndex];
+                if (!nextPoint || !nextPoint.lat || !nextPoint.lng) {
+                    console.warn(`Punto successivo non valido per veicolo ${vehicle.type}`, nextPoint);
+                    return;
+                }
+
+                const dist = map.distance([vehicle.position.lat, vehicle.position.lng], [nextPoint.lat, nextPoint.lng]);
+
+                if (dist < 20) { // Arrivato al punto (aumentato a 20 metri per maggiore tolleranza)
+                    vehicle.currentStationIndex = nextPointIndex;
+                    vehicle.position = { lat: nextPoint.lat, lng: nextPoint.lng };
+                    if (vehicle.marker) {
+                        vehicle.marker.setLatLng([vehicle.position.lat, vehicle.position.lng]);
+                    }
+                    vehicle.isStopped = true;
+                    vehicle.stopTime = Date.now();
+
+                    // Ferma solo se è una stazione (controlla se il punto corrente corrisponde a una stazione della linea)
+                    let isStation = false;
+                    if (vehicle.route && vehicle.route.length > 0) {
+                        // Se c'è un route, controlla se il punto corrente è vicino a una stazione
+                        const currentPoint = route[vehicle.currentStationIndex];
+                        let line = null;
+                        if (vehicle.type === 'bus') {
+                            line = busLines.find(l => l.id === vehicle.lineId);
+                        } else if (vehicle.type === 'tram') {
+                            line = tramLines.find(l => l.id === vehicle.lineId);
+                        } else if (vehicle.type === 'metro') {
+                            line = metroLines.find(l => l.id === vehicle.lineId);
+                        } else if (vehicle.type === 'train') {
+                            line = trainLines.find(l => l.id === vehicle.lineId);
+                        }
+
+                        if (line && line.stations) {
+                            // Controlla se siamo vicini a una stazione
+                            line.stations.forEach(station => {
+                                const dist = map.distance([currentPoint.lat, currentPoint.lng], [station.lat, station.lng]);
+                                if (dist < 50) { // 50 metri di tolleranza
+                                    isStation = true;
+                                }
+                            });
+                        }
+                    } else {
+                        // Se non c'è route, tutti i punti sono stazioni
+                        isStation = true;
+                    }
+
+                    if (isStation) {
+                        // Ferma il veicolo alla stazione per un breve periodo
+                        vehicle.isStopped = true;
+                        setTimeout(() => {
+                            if (vehicle.isMoving) { // Verifica che il veicolo debba ancora muoversi
+                                vehicle.isStopped = false;
+                            }
+                        }, BASE_STATION_STOP_TIME);
+                    } else {
+                        // Se non è una stazione, continua subito
+                        vehicle.isStopped = false;
+                    }
+                } else {
+                    // Muovi verso il prossimo punto usando interpolazione geografica
+                    const totalDist = map.distance([vehicle.position.lat, vehicle.position.lng], [nextPoint.lat, nextPoint.lng]);
+                    // Velocità in metri per frame (fattore ridotto per movimento più realistico)
+                    // Il fattore 15 converte la velocità base in metri per frame a una velocità visibile
+                    const moveDist = vehicle.speed * simulationSpeed * 15;
+
+                    if (totalDist > moveDist) {
+                        // Interpolazione lineare per coordinate geografiche (approssimata)
+                        const ratio = moveDist / totalDist;
+                        vehicle.position.lat = vehicle.position.lat + (nextPoint.lat - vehicle.position.lat) * ratio;
+                        vehicle.position.lng = vehicle.position.lng + (nextPoint.lng - vehicle.position.lng) * ratio;
+                    } else {
+                        vehicle.position = { lat: nextPoint.lat, lng: nextPoint.lng };
+                    }
+
+                    // Aggiorna sempre la posizione del marker
+                    if (vehicle.marker) {
+                        vehicle.marker.setLatLng([vehicle.position.lat, vehicle.position.lng]);
+                    }
+                }
+            });
+
+            vehicleAnimationId = requestAnimationFrame(animateVehicles);
+        }
+
+        function updateVehiclesInfo() {
+            const totalEl = document.getElementById('vehicles-count');
+            const busesEl = document.getElementById('buses-count');
+            const tramsEl = document.getElementById('trams-count');
+            const metrosEl = document.getElementById('metros-count');
+            const trainsEl = document.getElementById('trains-count');
+
+            if (totalEl) {
+                totalEl.textContent = vehicles.length;
+            }
+            if (busesEl) {
+                busesEl.textContent = vehicles.filter(v => v.type === 'bus').length;
+            }
+            if (tramsEl) {
+                tramsEl.textContent = vehicles.filter(v => v.type === 'tram').length;
+            }
+            if (metrosEl) {
+                metrosEl.textContent = vehicles.filter(v => v.type === 'metro').length;
+            }
+            if (trainsEl) {
+                trainsEl.textContent = vehicles.filter(v => v.type === 'train').length;
+            }
+        }
+
+        // Controlli del tempo
+        function setSimulationSpeed(speed) {
+            simulationSpeed = speed;
+            isPaused = (speed === 0);
+
+            document.querySelectorAll('.time-button').forEach(btn => btn.classList.remove('active'));
+            if (speed === 0) {
+                document.getElementById('time-pause').classList.add('active');
+            } else if (speed === 0.5) {
+                document.getElementById('time-0.5x').classList.add('active');
+            } else if (speed === 1) {
+                document.getElementById('time-1x').classList.add('active');
+            } else if (speed === 2) {
+                document.getElementById('time-2x').classList.add('active');
+            } else if (speed === 4) {
+                document.getElementById('time-4x').classList.add('active');
+            }
+
+            if (!isPaused && vehicles.length > 0 && !vehicleAnimationId) {
+                animateVehicles();
+            }
+        }
+
+        function updateTimeDisplay() {
+            const timeEl = document.getElementById('simulation-time');
+            if (timeEl) {
+                const hours = Math.floor(simulationTime / 3600);
+                const minutes = Math.floor((simulationTime % 3600) / 60);
+                const seconds = Math.floor(simulationTime % 60);
+                timeEl.textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            }
+        }
+
+        // Salvataggio e caricamento
+        async function requestGameplaysFolder() {
+            if (!('showDirectoryPicker' in window)) {
+                return null;
+            }
+
+            try {
+                const handle = await window.showDirectoryPicker({
+                    mode: 'readwrite',
+                    startIn: 'documents'
+                });
+
+                let gameplaysFolder = null;
+                try {
+                    gameplaysFolder = await handle.getDirectoryHandle('gameplays', { create: true });
+                } catch (e) {
+                    if (handle.name === 'gameplays') {
+                        gameplaysFolder = handle;
+                    } else {
+                        throw new Error('Impossibile creare la cartella "gameplays"');
+                    }
+                }
+
+                gameplaysFolderHandle = gameplaysFolder;
+                return gameplaysFolder;
+            } catch (e) {
+                console.error('Errore nell\'accesso alla cartella gameplays:', e);
+                return null;
+            }
+        }
+
+        async function saveGameplay(showAlert = true) {
+            try {
+                if (!gameplaysFolderHandle) {
+                    await requestGameplaysFolder();
+                }
+
+                if (!gameplaysFolderHandle) {
+                    if (showAlert) {
+                        alert('⚠️ Impossibile salvare il gameplay!\n\n🔴 Problema: Accesso alla cartella negato\n\n✅ Soluzione:\n• Assicurati di aver selezionato una cartella quando richiesto\n• Controlla i permessi del browser per l\'accesso ai file\n• Prova a selezionare una cartella diversa\n• Usa Chrome, Edge o Opera per il supporto completo');
+                    }
+                    return;
+                }
+
+                if (!gameplayFileName) {
+                    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+                    gameplayFileName = `gameplay_${timestamp}.json`;
+                }
+
+                if (!gameplayStartTime) {
+                    gameplayStartTime = new Date().toISOString();
+                }
+
+                const gameplayData = {
+                    center: [map.getCenter().lat, map.getCenter().lng],
+                    zoom: map.getZoom(),
+                    stations: stations.map(s => ({ ...s })),
+                    customStations: customStations.map(s => ({
+                        id: s.id,
+                        lat: s.lat,
+                        lng: s.lng,
+                        name: s.name,
+                        type: s.type,
+                        isCustom: true,
+                        attachedTrackId: s.attachedTrackId
+                    })),
+                    customTracks: customTracks.map(t => ({
+                        id: t.id,
+                        type: t.type,
+                        points: t.points.map(p => ({ lat: p.lat, lng: p.lng }))
+                    })),
+                    metroLines: metroLines.map(l => ({
+                        id: l.id,
+                        name: l.name,
+                        type: l.type || 'metro',
+                        color: l.color,
+                        stations: l.stations.map(s => ({ ...s })),
+                        route: l.route || []
+                    })),
+                    busLines: busLines.map(l => ({
+                        id: l.id,
+                        name: l.name,
+                        type: l.type || 'bus',
+                        color: l.color,
+                        stations: l.stations.map(s => ({ ...s })),
+                        route: l.route || []
+                    })),
+                    tramLines: tramLines.map(l => ({
+                        id: l.id,
+                        name: l.name,
+                        type: l.type || 'tram',
+                        color: l.color,
+                        stations: l.stations.map(s => ({ ...s })),
+                        route: l.route || []
+                    })),
+                    trainLines: trainLines.map(l => ({
+                        id: l.id,
+                        name: l.name,
+                        type: l.type || 'train',
+                        color: l.color,
+                        stations: l.stations.map(s => ({ ...s })),
+                        route: l.route || []
+                    })),
+                    vehicles: vehicles.map(v => ({
+                        type: v.type,
+                        lineId: v.lineId,
+                        lineName: v.lineName,
+                        route: v.route ? v.route.map(p => Array.isArray(p) ? [...p] : { ...p }) : [],
+                        currentStationIndex: v.currentStationIndex,
+                        position: { ...v.position },
+                        direction: v.direction
+                    })),
+                    startTime: gameplayStartTime,
+                    lastSaveTime: new Date().toISOString()
+                };
+
+                const fileHandle = await gameplaysFolderHandle.getFileHandle(gameplayFileName, { create: true });
+                const writable = await fileHandle.createWritable();
+                await writable.write(JSON.stringify(gameplayData, null, 2));
+                await writable.close();
+
+                if (showAlert) {
+                    alert(`✅ Gameplay salvato: ${gameplayFileName}`);
+                }
+            } catch (e) {
+                console.error('Errore nel salvataggio del gameplay:', e);
+                let errorMessage = '❌ Errore nel salvataggio del gameplay.\n\n';
+
+                if (e.name === 'NotAllowedError' || e.message?.includes('permission')) {
+                    errorMessage += '🔴 Problema: Permessi negati\n';
+                    errorMessage += '• Il browser ha negato l\'accesso alla cartella\n';
+                    errorMessage += '• Clicca su "Consenti" quando richiesto\n';
+                    errorMessage += '• Verifica le impostazioni di privacy del browser';
+                } else if (e.name === 'NotFoundError' || e.message?.includes('not found')) {
+                    errorMessage += '🔴 Problema: Cartella non trovata\n';
+                    errorMessage += '• La cartella selezionata potrebbe essere stata spostata o eliminata\n';
+                    errorMessage += '• Seleziona nuovamente la cartella';
+                } else if (e.name === 'QuotaExceededError' || e.message?.includes('quota')) {
+                    errorMessage += '🔴 Problema: Spazio insufficiente\n';
+                    errorMessage += '• Non c\'è abbastanza spazio sul disco\n';
+                    errorMessage += '• Libera spazio e riprova';
+                } else if (e.message?.includes('JSON') || e.message?.includes('stringify')) {
+                    errorMessage += '🔴 Problema: Errore nella serializzazione dei dati\n';
+                    errorMessage += '• I dati del gameplay potrebbero essere corrotti\n';
+                    errorMessage += '• Prova a ricaricare la pagina e riprova';
+                } else {
+                    errorMessage += `🔴 Errore tecnico:\n`;
+                    errorMessage += `• Tipo: ${e.name || 'Sconosciuto'}\n`;
+                    errorMessage += `• Messaggio: ${e.message || 'Nessun dettaglio disponibile'}\n`;
+                    errorMessage += `• Controlla la console per maggiori dettagli`;
+                }
+
+                if (showAlert) {
+                    alert(errorMessage);
+                }
+            }
+        }
+
+        async function initLoadGameplay() {
+            const overlay = document.getElementById('loadOverlay');
+            overlay.classList.add('hidden');
+            await loadGameplay();
+        }
+
+        async function loadGameplay() {
+            try {
+                if (!('showOpenFilePicker' in window)) {
+                    alert('Il tuo browser non supporta la selezione diretta dei file. Usa un browser moderno come Chrome, Edge o Opera.');
+                    document.getElementById('loadOverlay').classList.remove('hidden');
+                    return;
+                }
+
+                const [fileHandle] = await window.showOpenFilePicker({
+                    types: [{
+                        description: 'Gameplay files',
+                        accept: { 'application/json': ['.json'] }
+                    }]
+                });
+
+                const file = await fileHandle.getFile();
+                const text = await file.text();
+                const gameplayData = JSON.parse(text);
+
+                // Carica i dati
+                if (gameplayData.center) {
+                    map.setView(gameplayData.center, gameplayData.zoom || 13);
+                }
+
+                stations = gameplayData.stations || [];
+                customStations = gameplayData.customStations || [];
+                customTracks = gameplayData.customTracks || [];
+                metroLines = gameplayData.metroLines || [];
+                busLines = gameplayData.busLines || [];
+                tramLines = gameplayData.tramLines || [];
+                trainLines = gameplayData.trainLines || [];
+                // Supporta sia vecchi "trains" che nuovi "vehicles"
+                vehicles = gameplayData.vehicles || (gameplayData.trains ? gameplayData.trains.map(t => ({ ...t, type: 'train' })) : []);
+
+                // Rimuovi layer esistenti
+                stationMarkers.forEach(marker => map.removeLayer(marker));
+                customTracks.forEach(track => {
+                    if (track.polyline) map.removeLayer(track.polyline);
+                });
+                metroLines.forEach(line => {
+                    if (line.polyline) map.removeLayer(line.polyline);
+                });
+                stationMarkers = [];
+                customTracks = [];
+
+                // Ricrea i binari personalizzati
+                if (gameplayData.customTracks) {
+                    gameplayData.customTracks.forEach(trackData => {
+                        const trackColor = trackData.type === 'metro' ? '#FF0000' : trackData.type === 'tram' ? '#9C27B0' : '#2196F3';
+                        const polyline = L.polyline(
+                            trackData.points.map(p => [p.lat, p.lng]),
+                            {
+                                color: trackColor,
+                                weight: 5,
+                                opacity: 0.8
+                            }
+                        );
+                        polyline.addTo(map);
+
+                        const track = {
+                            id: trackData.id,
+                            type: trackData.type,
+                            points: trackData.points,
+                            polyline: polyline
+                        };
+                        customTracks.push(track);
+
+                        // Aggiungi alla rete appropriata
+                        if (trackData.type === 'metro') {
+                            metroTracks.push({
+                                id: track.id,
+                                points: track.points
+                            });
+                        } else if (trackData.type === 'tram') {
+                            tramTracks.push({
+                                id: track.id,
+                                points: track.points
+                            });
+                        } else if (trackData.type === 'train') {
+                            trainTracks.push({
+                                id: track.id,
+                                points: track.points
+                            });
+                        }
+                    });
+                }
+
+                // Ricrea le stazioni personalizzate
+                if (gameplayData.customStations) {
+                    gameplayData.customStations.forEach(stationData => {
+                        const emoji = stationData.type === 'metro' ? '🚇' : stationData.type === 'tram' ? '🚊' : '🚉';
+                        const stationColor = stationData.type === 'metro' ? '#FF0000' : stationData.type === 'tram' ? '#9C27B0' : '#2196F3';
+
+                        const icon = L.divIcon({
+                            className: 'station-marker-wrapper',
+                            html: `
+                                <div class="station-marker" style="background: ${stationColor}; border-color: ${stationColor};">
+                                    ${emoji}
+                                </div>
+                            `,
+                            iconSize: [30, 30],
+                            iconAnchor: [15, 15],
+                            popupAnchor: [0, -15]
+                        });
+
+                        const marker = L.marker([stationData.lat, stationData.lng], { icon });
+                        marker.bindPopup(`<strong>${stationData.name}</strong><br>${emoji} ${stationData.type === 'metro' ? 'Metro' : stationData.type === 'tram' ? 'Tram' : 'Treno'}`);
+
+                        // Associa il tipo di stazione al marker (converti metro in train per i filtri)
+                        const filterType = stationData.type === 'metro' ? 'train' : stationData.type;
+                        marker.stationType = filterType;
+                        marker.station = stationData;
+
+                        // Applica il filtro corrente
+                        if (!stationFilters[filterType]) {
+                            marker.setOpacity(0);
+                        }
+
+                        marker.addTo(map);
+
+                        const station = {
+                            ...stationData,
+                            marker: marker
+                        };
+                        customStations.push(station);
+                        stations.push(station);
+                        stationMarkers.push(marker);
+                    });
+                }
+
+                // Ricrea le stazioni
+                stations.forEach(station => {
+                    // Salta se è già stata ricreata come stazione personalizzata
+                    if (station.isCustom && customStations.find(s => s.id === station.id)) {
+                        return;
+                    }
+                    // Usa l'emoji salvata o determina in base al tipo
+                    let emoji = station.emoji || '🚉';
+                    let stationType = station.type || 'train';
+
+                    if (!station.emoji) {
+                        // Se non c'è emoji salvata, determina in base al tipo
+                        if (stationType === 'bus') {
+                            emoji = '🚌';
+                        } else if (stationType === 'tram') {
+                            emoji = '🚊';
+                        } else {
+                            emoji = '🚉';
+                        }
+                    }
+
+                    const icon = L.divIcon({
+                        className: 'station-marker station-' + stationType,
+                        html: emoji,
+                        iconSize: [30, 30],
+                        iconAnchor: [15, 15]
+                    });
+
+                    const marker = L.marker([station.lat, station.lng], { icon });
+                    const typeName = stationType === 'train' ? 'Treno/Metro' : stationType === 'bus' ? 'Bus' : 'Tram';
+                    marker.bindPopup(`${emoji} ${station.name || 'Stazione'}<br><small>Tipo: ${typeName}</small>`);
+
+                    // Associa il tipo di stazione al marker
+                    marker.stationType = stationType;
+                    marker.station = station;
+
+                    // Applica il filtro corrente
+                    if (!stationFilters[stationType]) {
+                        marker.setOpacity(0);
+                    }
+
+                    // Aggiungi evento click
+                    marker.on('click', (e) => {
+                        if (isCreatingLine) {
+                            e.originalEvent.stopPropagation();
+                            addStationToLine(station);
+                        }
+                    });
+
+                    marker.addTo(map);
+                    stationMarkers.push(marker);
+                });
+
+                // Ricrea tutte le linee (metro, bus, tram, treni)
+                const allLinesToRecreate = [...metroLines, ...busLines, ...tramLines, ...trainLines];
+                allLinesToRecreate.forEach(line => {
+                    const routePoints = line.route && line.route.length > 0
+                        ? line.route.map(p => Array.isArray(p) ? p : [p.lat, p.lng])
+                        : line.stations.map(s => [s.lat, s.lng]);
+
+                    const polyline = L.polyline(routePoints, {
+                        color: line.color,
+                        weight: 6,
+                        opacity: 0.8
+                    });
+                    polyline.addTo(map);
+                    line.polyline = polyline;
+                });
+
+                // Ricrea i veicoli (supporta sia vecchi "trains" che nuovi "vehicles")
+                vehicles.forEach(vehicleData => {
+                    const vehicle = {
+                        ...vehicleData,
+                        type: vehicleData.type || 'train', // Default a train per compatibilità
+                        isMoving: false,
+                        isStopped: true,
+                        stopTime: 0
+                    };
+
+                    // Trova la linea appropriata
+                    let line = null;
+                    if (vehicle.type === 'bus') {
+                        line = busLines.find(l => l.id === vehicleData.lineId);
+                    } else if (vehicle.type === 'tram') {
+                        line = tramLines.find(l => l.id === vehicleData.lineId);
+                    } else if (vehicle.type === 'metro') {
+                        line = metroLines.find(l => l.id === vehicleData.lineId);
+                    } else if (vehicle.type === 'train') {
+                        line = trainLines.find(l => l.id === vehicleData.lineId);
+                    }
+
+                    // Se non trova la linea, prova a cercare in tutte
+                    if (!line) {
+                        const allLines = [...metroLines, ...busLines, ...tramLines, ...trainLines];
+                        line = allLines.find(l => l.id === vehicleData.lineId);
+                    }
+
+                    const lineColor = line ? line.color : '#FFC107';
+                    const emoji = VEHICLE_EMOJIS[vehicle.type] || '🚂';
+                    const vehicleName = vehicle.type === 'bus' ? 'Bus' : vehicle.type === 'tram' ? 'Tram' : vehicle.type === 'metro' ? 'Metro' : 'Treno';
+
+                    // Crea icona personalizzata con colore della linea
+                    const iconHtml = `
+                        <div class="train-marker" style="border-color: ${lineColor}; box-shadow: 0 3px 12px rgba(0, 0, 0, 0.4), 0 0 0 3px ${lineColor}40;">
+                            ${emoji}
+                        </div>
+                    `;
+
+                    const icon = L.divIcon({
+                        className: 'train-marker-wrapper',
+                        html: iconHtml,
+                        iconSize: [32, 32],
+                        iconAnchor: [16, 16],
+                        popupAnchor: [0, -16]
+                    });
+
+                    vehicle.marker = L.marker([vehicle.position.lat, vehicle.position.lng], { icon });
+                    vehicle.marker.bindPopup(`${emoji} ${vehicleName} sulla <strong style="color: ${lineColor}">${vehicle.lineName || 'linea'}</strong>`);
+                    vehicle.marker.addTo(map);
+                });
+
+                gameplayFileName = fileHandle.name;
+                gameplayStartTime = gameplayData.startTime || new Date().toISOString();
+
+                updateStationsInfo();
+                updateVehiclesInfo();
+                updateMetroLinesList();
+            } catch (e) {
+                if (e.name === 'AbortError') {
+                    document.getElementById('loadOverlay').classList.remove('hidden');
+                    return;
+                }
+                console.error('Errore nel caricamento del gameplay:', e);
+                alert('❌ Errore nel caricamento del gameplay');
+                document.getElementById('loadOverlay').classList.remove('hidden');
+            }
+        }
+
+        function startNewGame() {
+            document.getElementById('loadOverlay').classList.add('hidden');
+            // Reset tutto
+            stations = [];
+            customStations = [];
+            customTracks.forEach(track => {
+                if (track.polyline) map.removeLayer(track.polyline);
+            });
+            customTracks = [];
+            metroLines = [];
+            busLines = [];
+            tramLines = [];
+            trainLines = [];
+            vehicles = [];
+
+            // Rimuovi marker e layer
+            stationMarkers.forEach(marker => map.removeLayer(marker));
+            vehicles.forEach(vehicle => {
+                if (vehicle.marker) map.removeLayer(vehicle.marker);
+            });
+
+            const allLines = [...metroLines, ...busLines, ...tramLines, ...trainLines];
+            allLines.forEach(line => {
+                if (line.polyline) map.removeLayer(line.polyline);
+            });
+
+            stationMarkers = [];
+            currentLineId = 0;
+            gameplayFileName = null;
+            gameplayStartTime = null;
+            updateStationsInfo();
+            updateVehiclesInfo();
+            updateMetroLinesList();
+
+            // Avvia il caricamento automatico delle stazioni
+            startAutoLoadStations();
+        }
+
+        // Avvia il caricamento automatico delle stazioni
+        startAutoLoadStations();
+
+        // Aggiorna stazioni, strade e binari quando la mappa viene spostata o zoomata
+        map.on('moveend', () => {
+            // Ricarica tutto quando l'utente naviga in una nuova area
+            if (autoLoadStationsInterval) {
+                loadRealStations(false);
+                loadRoadsAndTracks(false);
+            }
+        });
+
+        // Carica anche quando si fa zoom
+        map.on('zoomend', () => {
+            if (autoLoadStationsInterval) {
+                loadRealStations(false);
+                loadRoadsAndTracks(false);
+            }
+        });
+
+        // Funzione per gestire i filtri delle stazioni
+        function toggleStationFilter(type) {
+            // Inverti lo stato del filtro
+            stationFilters[type] = !stationFilters[type];
+
+            // Aggiorna l'icona del filtro
+            const filterIcon = document.getElementById(`filter-${type}`);
+            if (filterIcon) {
+                if (stationFilters[type]) {
+                    filterIcon.classList.remove('inactive');
+                    filterIcon.classList.add('active');
+                } else {
+                    filterIcon.classList.remove('active');
+                    filterIcon.classList.add('inactive');
+                }
+            }
+
+            // Applica il filtro a tutte le stazioni
+            stationMarkers.forEach(marker => {
+                if (marker.stationType === type) {
+                    if (stationFilters[type]) {
+                        marker.setOpacity(1);
+                    } else {
+                        marker.setOpacity(0);
+                    }
+                }
+            });
+        }
+
+        // Inizializza
+        updateStationsInfo();
+        updateVehiclesInfo();
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mods & Playsets - Trasporti</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 50%, #e8ecf1 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 40px 20px;
+        }
+
+        @keyframes gradientShift {
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        .container {
+            width: 90%;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(40px);
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
+            padding: 50px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+
+        .input-group {
+            margin-bottom: 25px;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+            color: #2c3e50;
+            font-weight: 600;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            background: rgba(255, 255, 255, 0.9);
+            font-size: 1.1em;
+            margin-bottom: 5px;
+        }
+
+        small {
+            display: block;
+            color: #666;
+            margin-bottom: 15px;
+        }
+
+        .save-button {
+            padding: 15px 40px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.2em;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .save-button:hover {
+            transform: scale(1.05);
+        }
+
+        .back-button {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 10px;
+            text-decoration: none;
+            color: #333;
+            font-weight: bold;
+        }
+
+        .status-message {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .status-success {
+            background-color: rgba(76, 175, 80, 0.2);
+            color: #2c662f;
+            display: block;
+        }
+
+        .mod-item {
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            transition: all 0.3s ease;
+        }
+
+        .mod-item:hover {
+            background: rgba(255, 255, 255, 0.8);
+            transform: translateX(5px);
+        }
+
+        .mod-info {
+            flex: 1;
+        }
+
+        .mod-name {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 1.1em;
+        }
+
+        .mod-path {
+            font-size: 0.85em;
+            color: #666;
+            font-family: 'Courier New', monospace;
+        }
+
+        /* Toggle Switch */
+        .toggle-switch {
+            position: relative;
+            width: 60px;
+            height: 30px;
+            margin-left: 15px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(244, 67, 54, 0.5);
+            transition: 0.4s;
+            border-radius: 30px;
+            border: 2px solid rgba(255, 255, 255, 0.8);
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: 0.4s;
+            border-radius: 50%;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        input:checked+.toggle-slider {
+            background-color: rgba(76, 175, 80, 0.6);
+        }
+
+        input:checked+.toggle-slider:before {
+            transform: translateX(30px);
+        }
+
+        .delete-button {
+            background: rgba(244, 67, 54, 0.6);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 15px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-left: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .delete-button:hover {
+            background: rgba(244, 67, 54, 0.8);
+            transform: scale(1.05);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 30px;
+            color: #999;
+            font-style: italic;
+        }
+
+        .status-error {
+            background-color: rgba(244, 67, 54, 0.2);
+            color: #c62828;
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <a href="index.html" class="back-button">⬅️ Home</a>
+
+    <div class="container">
+        <div class="glass-card">
+            <h1>🧩 Mods & Playsets</h1>
+
+            <!-- Add new mod section -->
+            <div class="input-group">
+                <label for="new-mod-name">➕ Aggiungi Nuova Mod / Add New Mod</label>
+                <input type="text" id="new-mod-name" placeholder="es. real_stations">
+                <small>Inserisci il nome della cartella dentro 'mods/' contenente il file <b>mod.js</b><br>
+                    Enter the folder name inside 'mods/' containing the <b>mod.js</b> file</small>
+            </div>
+
+            <button class="save-button" onclick="addNewMod()" style="background: rgba(76, 175, 80, 0.6);">
+                ➕ Aggiungi / Add
+            </button>
+
+            <!-- Mods list -->
+            <div style="margin-top: 30px;">
+                <h3>🧩 Mod Disponibili / Available Mods</h3>
+                <div id="mods-list" style="margin-top: 15px;">
+                    <!-- Mods will be listed here -->
+                </div>
+            </div>
+
+            <div id="status-msg" class="status-message"></div>
+
+            <!-- Dynamic folder structure -->
+            <div
+                style="margin-top: 30px; text-align: left; background: rgba(255,255,255,0.5); padding: 20px; border-radius: 15px;">
+                <h3>📁 Struttura Cartelle / Folder Structure:</h3>
+                <pre id="folder-structure"
+                    style="margin-top: 10px; background: rgba(0,0,0,0.05); padding: 10px; border-radius: 5px;">Transport/
+├── index.html
+├── mods/
+│   └── (nessuna mod aggiunta)
+└── ...</pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Mod Management System
+        let discoveredMods = JSON.parse(localStorage.getItem('discovered_mods') || '[]');
+        let enabledMods = JSON.parse(localStorage.getItem('enabled_mods') || '[]');
+
+        // Initialize on page load
+        renderModsList();
+        updateFolderStructure();
+
+        function addNewMod() {
+            const modName = document.getElementById('new-mod-name').value.trim();
+
+            if (!modName) {
+                showStatus('⚠️ Inserisci un nome per la mod / Enter a mod name', 'error');
+                return;
+            }
+
+            if (discoveredMods.includes(modName)) {
+                showStatus(`⚠️ La mod "${modName}" è già stata aggiunta`, 'error');
+                return;
+            }
+
+            // Add to discovered mods
+            discoveredMods.push(modName);
+            localStorage.setItem('discovered_mods', JSON.stringify(discoveredMods));
+
+            // Enable by default
+            enabledMods.push(modName);
+            localStorage.setItem('enabled_mods', JSON.stringify(enabledMods));
+
+            // Clear input
+            document.getElementById('new-mod-name').value = '';
+
+            // Update UI
+            renderModsList();
+            updateFolderStructure();
+            showStatus(`✅ Mod "${modName}" aggiunta e attivata!`, 'success');
+        }
+
+        function toggleMod(modName) {
+            if (enabledMods.includes(modName)) {
+                // Disable
+                enabledMods = enabledMods.filter(m => m !== modName);
+            } else {
+                // Enable
+                enabledMods.push(modName);
+            }
+
+            localStorage.setItem('enabled_mods', JSON.stringify(enabledMods));
+            renderModsList();
+        }
+
+        function deleteMod(modName) {
+            if (!confirm(`Vuoi rimuovere la mod "${modName}" dalla lista?\n\nNOTA: Questo non elimina i file, rimuove solo la mod dalla lista gestita.`)) {
+                return;
+            }
+
+            // Remove from discovered and enabled
+            discoveredMods = discoveredMods.filter(m => m !== modName);
+            enabledMods = enabledMods.filter(m => m !== modName);
+
+            localStorage.setItem('discovered_mods', JSON.stringify(discoveredMods));
+            localStorage.setItem('enabled_mods', JSON.stringify(enabledMods));
+
+            renderModsList();
+            updateFolderStructure();
+            showStatus(`🗑️ Mod "${modName}" rimossa dalla lista`, 'success');
+        }
+
+        function renderModsList() {
+            const container = document.getElementById('mods-list');
+
+            if (discoveredMods.length === 0) {
+                container.innerHTML = '<div class="empty-state">📭 Nessuna mod aggiunta<br>Aggiungi una mod usando il campo sopra</div>';
+                return;
+            }
+
+            container.innerHTML = discoveredMods.map(modName => {
+                const isEnabled = enabledMods.includes(modName);
+                return `
+                    <div class="mod-item">
+                        <div class="mod-info">
+                            <div class="mod-name">🧩 ${modName}</div>
+                            <div class="mod-path">mods/${modName}/mod.js</div>
+                        </div>
+                        <div style="display: flex; align-items: center;">
+                            <label class="toggle-switch">
+                                <input type="checkbox" ${isEnabled ? 'checked' : ''} onchange="toggleMod('${modName}')">
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <button class="delete-button" onclick="deleteMod('${modName}')">🗑️</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateFolderStructure() {
+            const container = document.getElementById('folder-structure');
+
+            if (discoveredMods.length === 0) {
+                container.textContent = `Transport/
+├── index.html
+├── mods/
+│   └── (nessuna mod aggiunta)
+└── ...`;
+                return;
+            }
+
+            let structure = `Transport/
+├── index.html
+├── mods/\n`;
+
+            discoveredMods.forEach((modName, index) => {
+                const isLast = index === discoveredMods.length - 1;
+                const isEnabled = enabledMods.includes(modName);
+                const prefix = isLast ? '└──' : '├──';
+                const status = isEnabled ? '✅' : '❌';
+
+                structure += `│   ${prefix} ${modName}/       ${status} ${isEnabled ? 'ATTIVA' : 'DISATTIVA'}\n`;
+                structure += `│   ${isLast ? '    ' : '│   '}└── mod.js\n`;
+            });
+
+            structure += '└── ...';
+            container.textContent = structure;
+        }
+
+        function showStatus(msg, type) {
+            const el = document.getElementById('status-msg');
+            el.innerHTML = msg;
+            el.className = 'status-message status-' + type;
+
+            // Auto-hide after 3 seconds
+            setTimeout(() => {
+                el.className = 'status-message';
+            }, 3000);
+        }
+
+        // Handle Enter key in input
+        document.getElementById('new-mod-name').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                addNewMod();
+            }
+        });
+    </script>
+</body>
+
+</html>

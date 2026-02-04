@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Impostazioni - Trasporti</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 50%, #e8ecf1 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            overflow-y: auto;
+            overflow-x: hidden;
+            position: relative;
+            padding: 40px 20px;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            width: 90%;
+            max-width: 600px;
+            margin: 0 auto;
+            padding-bottom: 100px;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+            padding: 60px 50px;
+            text-align: center;
+            animation: slideIn 0.8s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h1 {
+            font-size: 3em;
+            font-weight: 700;
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 40px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            letter-spacing: 2px;
+        }
+
+        .settings-section {
+            margin-bottom: 40px;
+            text-align: left;
+        }
+
+        .settings-section h2 {
+            color: #2c3e50;
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .language-selector {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .language-option {
+            display: flex;
+            align-items: center;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(20px);
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+        }
+
+        .language-option:hover {
+            background: rgba(255, 255, 255, 0.85);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
+        }
+
+        .language-option.active {
+            background: rgba(76, 175, 80, 0.3);
+            border-color: rgba(76, 175, 80, 0.8);
+        }
+
+        .language-option input[type="radio"] {
+            margin-right: 15px;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .language-option label {
+            flex: 1;
+            cursor: pointer;
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .language-flag {
+            font-size: 2em;
+            margin-right: 15px;
+        }
+
+        .back-button {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 12px 25px;
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            border-radius: 15px;
+            color: #2c3e50;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+        }
+
+        .back-button:hover {
+            background: rgba(255, 255, 255, 0.85);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
+        }
+
+        .save-button {
+            margin-top: 30px;
+            padding: 18px 40px;
+            background: rgba(76, 175, 80, 0.6);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(76, 175, 80, 0.8);
+            border-radius: 15px;
+            color: #fff;
+            font-size: 1.2em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+        }
+
+        .save-button:hover {
+            background: rgba(76, 175, 80, 0.8);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.2em;
+            }
+            
+            .glass-card {
+                padding: 40px 30px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-button">⬅️ <span id="back-text">Indietro</span></a>
+    
+    <div class="container">
+        <div class="glass-card">
+            <h1>⚙️ <span id="settings-title">Impostazioni</span></h1>
+            
+            <div class="settings-section">
+                <h2 id="language-title">🌐 Lingua / Language / Idioma</h2>
+                <div class="language-selector">
+                    <div class="language-option" id="lang-it">
+                        <input type="radio" name="language" value="it" id="radio-it">
+                        <span class="language-flag">🇮🇹</span>
+                        <label for="radio-it">Italiano</label>
+                    </div>
+                    <div class="language-option" id="lang-en">
+                        <input type="radio" name="language" value="en" id="radio-en">
+                        <span class="language-flag">🇬🇧</span>
+                        <label for="radio-en">English</label>
+                    </div>
+                    <div class="language-option" id="lang-es">
+                        <input type="radio" name="language" value="es" id="radio-es">
+                        <span class="language-flag">🇪🇸</span>
+                        <label for="radio-es">Español</label>
+                    </div>
+                </div>
+            </div>
+            
+            <button class="save-button" onclick="saveLanguage()" id="save-button">💾 <span id="save-text">Salva</span></button>
+        </div>
+    </div>
+
+    <script src="i18n.js"></script>
+    <script>
+        // Carica la lingua salvata
+        let currentLanguage = localStorage.getItem('language') || 'it';
+        
+        // Inizializza la pagina con la lingua corrente
+        document.addEventListener('DOMContentLoaded', () => {
+            updateLanguageUI();
+            applyLanguage(currentLanguage);
+        });
+
+        function updateLanguageUI() {
+            // Seleziona il radio button corretto
+            document.getElementById(`radio-${currentLanguage}`).checked = true;
+            document.getElementById(`lang-${currentLanguage}`).classList.add('active');
+            
+            // Rimuovi active da altri
+            ['it', 'en', 'es'].forEach(lang => {
+                if (lang !== currentLanguage) {
+                    document.getElementById(`lang-${lang}`).classList.remove('active');
+                }
+            });
+        }
+
+        // Gestisci click sulle opzioni di lingua
+        document.querySelectorAll('.language-option').forEach(option => {
+            option.addEventListener('click', (e) => {
+                const radio = option.querySelector('input[type="radio"]');
+                if (radio) {
+                    radio.checked = true;
+                    currentLanguage = radio.value;
+                    updateLanguageUI();
+                    applyLanguage(currentLanguage);
+                }
+            });
+        });
+
+        // Gestisci cambio radio button
+        document.querySelectorAll('input[name="language"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                currentLanguage = e.target.value;
+                updateLanguageUI();
+                applyLanguage(currentLanguage);
+            });
+        });
+
+        function applyLanguage(lang) {
+            const translations = i18n[lang] || i18n.it;
+            
+            // Aggiorna i testi della pagina impostazioni
+            document.getElementById('settings-title').textContent = translations.settings.title;
+            document.getElementById('language-title').textContent = translations.settings.language;
+            document.getElementById('back-text').textContent = translations.common.back;
+            document.getElementById('save-text').textContent = translations.common.save;
+        }
+
+        function saveLanguage() {
+            localStorage.setItem('language', currentLanguage);
+            const translations = i18n[currentLanguage] || i18n.it;
+            alert(translations.settings.saved || 'Impostazioni salvate!');
+            
+            // Reindirizza alla home
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 500);
+        }
+    </script>
+</body>
+</html>
+
+
