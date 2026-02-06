@@ -1,10 +1,13 @@
-[
-    {
-        "id": "example_city",
-        "name": "Città Esempio (Community)",
-        "file": "example_city.json",
-        "description": "Una città di esempio per iniziare a giocare",
-        "author": "Transport Team",
-        "date": "2026-02-04"
-    }
-]
+{
+    "mods": [],
+    "maps": [
+        {
+            "id": "example_city_map",
+            "name": "Mappa Città Esempio",
+            "file": "example_city.json",
+            "description": "La mappa della città di esempio",
+            "author": "Transport Team",
+            "date": "2026-02-04"
+        }
+    ]
+}

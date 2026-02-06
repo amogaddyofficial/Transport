@@ -436,6 +436,10 @@
                 <button class="back-button" onclick="saveGameplay()" style="background: rgba(76, 175, 80, 0.6);">
                     💾 <span data-i18n="game.save">Salva</span>
                 </button>
+                <button class="back-button" onclick="exportCurrentMap()"
+                    style="background: rgba(33, 150, 243, 0.6); margin-left: 5px;">
+                    🗺️ Esporta .tranmap
+                </button>
                 <a href="index.html" class="back-button">⬅️ <span data-i18n="game.back">Menu</span></a>
             </div>
         </div>
@@ -3173,6 +3177,52 @@
         // Inizializza
         updateStationsInfo();
         updateVehiclesInfo();
+
+        // Esporta la mappa corrente come .tranmap
+        async function exportCurrentMap() {
+            if (!gameplayFileName) {
+                // Se non è mai stata salvata, salviamola prima
+                await saveGameplay(false);
+            }
+
+            // Prendiamo il nome dal titolo o timestamp
+            const name = document.title.replace('Gioco - ', '') || `Map_${Date.now()}`;
+
+            // Costruiamo l'oggetto mappa
+            const mapData = {
+                id: `map_${Date.now()}`, // Nuovo ID univoco per l'export
+                name: name,
+                author: "User", // Potremmo chiederlo
+                description: "Mappa esportata",
+                date: new Date().toISOString().split('T')[0],
+                // Includiamo i dati essenziali della mappa
+                stations: stations,
+                tracks: [
+                    ...metroTracks,
+                    ...tramTracks,
+                    ...trainTracks,
+                    ...roadNetwork
+                ],
+                lines: [
+                    ...metroLines,
+                    ...busLines,
+                    ...tramLines,
+                    ...trainLines
+                ],
+                // Configurazioni e stato
+                center: { lat: map.getCenter().lat, lng: map.getCenter().lng },
+                zoom: map.getZoom(),
+                isTemplate: true // Flag per indicare che è una mappa/template
+            };
+
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(mapData));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", `${name.replace(/\s+/g, '_')}.tranmap`);
+            document.body.appendChild(downloadAnchorNode);
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+        }
     </script>
 </body>
 

@@ -120,6 +120,18 @@ const SavesDB = {
         downloadAnchorNode.remove();
     },
 
+    // Esporta come Mappa (.tranmap o .txt) per la condivisione
+    async exportMap(id, extension = 'tranmap') {
+        const save = await this.loadGame(id);
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(save));
+        const downloadAnchorNode = document.createElement('a');
+        downloadAnchorNode.setAttribute("href", dataStr);
+        downloadAnchorNode.setAttribute("download", `${save.name.replace(/\s+/g, '_')}.${extension}`);
+        document.body.appendChild(downloadAnchorNode);
+        downloadAnchorNode.click();
+        downloadAnchorNode.remove();
+    },
+
     // Importa salvataggio da JSON (upload)
     async importSave(jsonContent) {
         try {
@@ -128,10 +140,9 @@ const SavesDB = {
             if (!saveData.stations && !saveData.metroLines) {
                 throw new Error("Formato salvataggio non valido");
             }
-            // Rigenera ID per evitare conflitti, o mantieni se vuoi sovrascrivere?
-            // Meglio generare nuovo ID per importazione
+            // Rigenera ID per evitare conflitti
             saveData.id = `imported_${Date.now()}`;
-            saveData.name = (saveData.name || "Imported Game") + " (Imported)";
+            saveData.name = (saveData.name || "Imported Map") + " (Imported)";
 
             await this.saveGame(saveData);
             return true;
