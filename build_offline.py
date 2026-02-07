@@ -8,10 +8,25 @@ def create_offline_version():
     build_dir = os.path.join(source_dir, "offline_build")
     output_zip = "transport_offline.zip"
     
+    # Create versions directory if not exists
+    versions_dir = os.path.join(source_dir, "versions")
+    if not os.path.exists(versions_dir):
+        os.makedirs(versions_dir)
+
+    # Archive previous version if exists
+    if os.path.exists(output_zip):
+        import time
+        timestamp = int(time.time())
+        # Keep only last 5 versions to avoid huge files? User didn't ask limits.
+        archive_name = f"transport_offline_v{timestamp}.zip"
+        shutil.move(output_zip, os.path.join(versions_dir, archive_name))
+        print(f"Archived previous version to versions/{archive_name}")
+
     # Clean previous build
     if os.path.exists(build_dir):
         shutil.rmtree(build_dir)
     if os.path.exists(output_zip):
+        # Should be gone due to move, but safety check
         os.remove(output_zip)
         
     print(f"Creating build directory: {build_dir}")

@@ -1456,30 +1456,34 @@
 
             // Aggiorna preview
             if (currentTrackPoints.length > 1) {
-                // Trova il percorso più vicino seguendo le strade
+                // Trova il percorso più vicino seguendo le strade (SOLO PER TRAM)
                 const lastPoint = currentTrackPoints[currentTrackPoints.length - 2];
                 const currentPoint = currentTrackPoints[currentTrackPoints.length - 1];
 
-                // Usa le strade per trovare il percorso
-                const path = findPathAlongRoads(lastPoint, currentPoint);
+                let allPoints = [];
+
+                // Se è un Tram, prova a seguire la strada
+                if (currentTrackType === 'tram') {
+                    // Ricalcola tutto il percorso per coerenza
+                    for (let i = 0; i < currentTrackPoints.length - 1; i++) {
+                        allPoints.push([currentTrackPoints[i].lat, currentTrackPoints[i].lng]);
+                        if (i < currentTrackPoints.length - 1) {
+                            const path = findPathAlongRoads(currentTrackPoints[i], currentTrackPoints[i + 1]);
+                            if (path && path.length > 0) {
+                                allPoints.push(...path.map(p => [p.lat, p.lng]));
+                            }
+                        }
+                    }
+                    allPoints.push([currentTrackPoints[currentTrackPoints.length - 1].lat, currentTrackPoints[currentTrackPoints.length - 1].lng]);
+                } else {
+                    // Per Metro e Treni, linea retta (o curve beziér in futuro, ma per ora retta)
+                    allPoints = currentTrackPoints.map(p => [p.lat, p.lng]);
+                }
 
                 // Rimuovi preview precedente
                 if (currentTrackPreview) {
                     map.removeLayer(currentTrackPreview);
                 }
-
-                // Crea preview con tutti i punti
-                const allPoints = [];
-                for (let i = 0; i < currentTrackPoints.length - 1; i++) {
-                    allPoints.push([currentTrackPoints[i].lat, currentTrackPoints[i].lng]);
-                    if (i < currentTrackPoints.length - 1) {
-                        const path = findPathAlongRoads(currentTrackPoints[i], currentTrackPoints[i + 1]);
-                        if (path && path.length > 0) {
-                            allPoints.push(...path.map(p => [p.lat, p.lng]));
-                        }
-                    }
-                }
-                allPoints.push([currentTrackPoints[currentTrackPoints.length - 1].lat, currentTrackPoints[currentTrackPoints.length - 1].lng]);
 
                 const trackColor = currentTrackType === 'metro' ? '#FF0000' : currentTrackType === 'tram' ? '#9C27B0' : '#2196F3';
                 currentTrackPreview = L.polyline(allPoints, {
@@ -1633,19 +1637,26 @@
                 return;
             }
 
-            // Calcola il percorso completo seguendo le strade
+            // Calcola il percorso completo
             const routePoints = [];
-            for (let i = 0; i < currentTrackPoints.length - 1; i++) {
-                const path = findPathAlongRoads(currentTrackPoints[i], currentTrackPoints[i + 1]);
-                if (i === 0) {
-                    routePoints.push(...path);
-                } else {
-                    if (path.length > 1) {
-                        routePoints.push(...path.slice(1));
-                    } else {
+
+            if (currentTrackType === 'tram') {
+                // I tram seguono le strade
+                for (let i = 0; i < currentTrackPoints.length - 1; i++) {
+                    const path = findPathAlongRoads(currentTrackPoints[i], currentTrackPoints[i + 1]);
+                    if (i === 0) {
                         routePoints.push(...path);
+                    } else {
+                        if (path.length > 1) {
+                            routePoints.push(...path.slice(1));
+                        } else {
+                            routePoints.push(...path);
+                        }
                     }
                 }
+            } else {
+                // Treni e Metro: linea diretta (free-form)
+                routePoints.push(...currentTrackPoints);
             }
 
             // Crea il binario
