@@ -307,9 +307,9 @@
 
         document.addEventListener('DOMContentLoaded', async () => {
             await ModsDB.init();
-            await loadFolderMods(); // Carica mod dalla cartella
+            await loadFolderMods(); // Carica mod dalla cartella (gestita manualmente)
             await renderModsList();
-            await loadCommunityMods();
+            // Community mods fetching removed as per request
         });
 
         // Nuova funzione per caricare le mod dalla cartella fisica (tramite index.json)
