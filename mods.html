@@ -248,12 +248,7 @@
         <div class="glass-card">
             <h1>🧩 Mods</h1>
 
-            <div class="tabs" style="display: flex; justify-content: center; margin-bottom: 20px; gap: 10px;">
-                <button class="tab-button active" onclick="showTab('local')"
-                    style="padding: 10px 20px; border-radius: 20px; cursor: pointer;">📂 Le Mie Mod</button>
-                <button class="tab-button" onclick="showTab('community')"
-                    style="padding: 10px 20px; border-radius: 20px; cursor: pointer;">🌐 Community Mods</button>
-            </div>
+            <div style="margin-bottom: 20px;"></div>
 
             <div id="status-msg" class="status-message"></div>
 
@@ -279,23 +274,7 @@
             </div>
 
             <!-- TAB COMMUNITY -->
-            <div id="tab-community" style="display: none;">
-                <div
-                    style="text-align: left; margin-bottom: 20px; padding: 15px; background: rgba(255,255,255,0.5); border-radius: 10px;">
-                    <p>🌐 <strong>Mod della Community</strong></p>
-                    <p style="font-size: 0.9em; color: #555;">
-                        Scarica mod create da altri utenti.
-                    </p>
-                    <div style="margin-top: 10px;">
-                        <button class="delete-button"
-                            onclick="alert('Per eliminare una mod dalla community, devi aprire una issue o una PR su GitHub per richiederne la rimozione.')">🗑️
-                            Come Eliminare?</button>
-                    </div>
-                </div>
-                <div id="community-mods-list">
-                    <p>Caricamento catalogo...</p>
-                </div>
-            </div>
+            <!-- Community Tab removed -->
 
             <!-- Folder Structure Removed -->
         </div>
@@ -345,17 +324,15 @@
             }
         }
 
-        function showTab(tabName) {
-            document.getElementById('tab-local').style.display = tabName === 'local' ? 'block' : 'none';
-            document.getElementById('tab-community').style.display = tabName === 'community' ? 'block' : 'none';
+        /* Tabs logic removed */
 
-            // Aggiorna stili bottoni (semplificato inline per brevità nel replace)
-            document.querySelectorAll('.tab-button').forEach(btn => {
-                btn.style.background = 'rgba(255,255,255,0.4)';
-                btn.style.fontWeight = 'normal';
-            });
-            event.target.style.background = 'white';
-            event.target.style.fontWeight = 'bold';
+        // Aggiorna stili bottoni (semplificato inline per brevità nel replace)
+        document.querySelectorAll('.tab-button').forEach(btn => {
+            btn.style.background = 'rgba(255,255,255,0.4)';
+            btn.style.fontWeight = 'normal';
+        });
+        event.target.style.background = 'white';
+        event.target.style.fontWeight = 'bold';
         }
 
         // --- LOCAL LOGIC (Existing) ---
