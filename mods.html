@@ -327,13 +327,7 @@
         /* Tabs logic removed */
 
         // Aggiorna stili bottoni (semplificato inline per brevità nel replace)
-        document.querySelectorAll('.tab-button').forEach(btn => {
-            btn.style.background = 'rgba(255,255,255,0.4)';
-            btn.style.fontWeight = 'normal';
-        });
-        event.target.style.background = 'white';
-        event.target.style.fontWeight = 'bold';
-        }
+        /* Tabs styling removed */
 
         // --- LOCAL LOGIC (Existing) ---
         async function addNewMod() {
@@ -356,7 +350,6 @@
                     }
                     fileInput.value = '';
                     await renderModsList();
-                    updateFolderStructure();
                     showStatus(`✅ Mod "${modName}" installata!`, 'success');
                 } catch (err) {
                     showStatus('Errore: ' + err, 'error');
