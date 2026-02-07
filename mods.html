@@ -246,7 +246,7 @@
 
     <div class="container">
         <div class="glass-card">
-            <h1>🧩 Mods & Playsets</h1>
+            <h1>🧩 Mods</h1>
 
             <div class="tabs" style="display: flex; justify-content: center; margin-bottom: 20px; gap: 10px;">
                 <button class="tab-button active" onclick="showTab('local')"
@@ -297,13 +297,7 @@
                 </div>
             </div>
 
-            <!-- Footer Structure Info -->
-            <div
-                style="margin-top: 30px; text-align: left; background: rgba(255,255,255,0.5); padding: 20px; border-radius: 15px;">
-                <h3>📁 Struttura Cartelle / Folder Structure:</h3>
-                <pre id="folder-structure"
-                    style="margin-top: 10px; background: rgba(0,0,0,0.05); padding: 10px; border-radius: 5px;"></pre>
-            </div>
+            <!-- Folder Structure Removed -->
         </div>
     </div>
 
@@ -313,10 +307,43 @@
 
         document.addEventListener('DOMContentLoaded', async () => {
             await ModsDB.init();
+            await loadFolderMods(); // Carica mod dalla cartella
             await renderModsList();
             await loadCommunityMods();
-            updateFolderStructure();
         });
+
+        // Nuova funzione per caricare le mod dalla cartella fisica (tramite index.json)
+        async function loadFolderMods() {
+            try {
+                const response = await fetch('mods/index.json');
+                if (!response.ok) return; // Se non c'è index, pazienza
+
+                const data = await response.json();
+                const folderMods = data.mods || [];
+
+                for (const modInfo of folderMods) {
+                    // Controlla se la mod è già nel DB, se no la aggiunge/aggiorna
+                    // Nota: Per le mod "folder", potremmo volerle ricaricare ogni volta
+                    // Ma per ora le trattiamo come "installate".
+                    // O meglio: le mostriamo nella lista "Le Mie Mod" con un'icona diversa?
+                    // L'utente vuole che il menu mostri le mod nella cartella.
+
+                    // Fetch del contenuto della mod
+                    try {
+                        const modRes = await fetch(modInfo.path);
+                        if (modRes.ok) {
+                            const code = await modRes.text();
+                            await ModsDB.saveMod(modInfo.name, code);
+                            console.log(`Mod ${modInfo.name} loaded from folder.`);
+                        }
+                    } catch (e) {
+                        console.error(`Failed to load mod ${modInfo.name}:`, e);
+                    }
+                }
+            } catch (e) {
+                console.log("Nessun catalogo mod locale trovato (mods/index.json).");
+            }
+        }
 
         function showTab(tabName) {
             document.getElementById('tab-local').style.display = tabName === 'local' ? 'block' : 'none';
@@ -467,18 +494,7 @@
         }
 
         // Utility
-        async function updateFolderStructure() {
-            const container = document.getElementById('folder-structure');
-            const mods = await ModsDB.getAllMods();
-            let structure = `Browser Storage (IndexedDB)/\n`;
-            if (mods.length === 0) structure += `├── (vuoto)`;
-            mods.forEach((mod, i) => {
-                const isLast = i === mods.length - 1;
-                const isEnabled = enabledMods.includes(mod.name);
-                structure += `${isLast ? '└──' : '├──'} 🧩 ${mod.name} [${isEnabled ? 'ON' : 'OFF'}]\n`;
-            });
-            container.textContent = structure;
-        }
+        /* Folder structure visualizer removed as per request */
 
         function showStatus(msg, type) {
             const el = document.getElementById('status-msg');

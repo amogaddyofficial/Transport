@@ -1,0 +1,10 @@
+{
+    "mods": [
+        {
+            "name": "real_stations",
+            "path": "mods/real_stations/mod.js",
+            "title": "Stazioni Reali",
+            "description": "Carica stazioni da OpenStreetMap"
+        }
+    ]
+}
