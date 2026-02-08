@@ -1448,7 +1448,8 @@
             document.getElementById('track-creation-info').style.display = 'block';
 
             const typeName = currentTrackType === 'metro' ? 'Metro' : currentTrackType === 'tram' ? 'Tram' : 'Treno';
-            document.getElementById('track-creation-status').textContent = `👆 Clicca sulla mappa per aggiungere punti al binario ${typeName}. I binari seguiranno le strade visibili sulla mappa.`;
+            const extraInfo = currentTrackType === 'tram' ? 'I binari seguiranno le strade.' : 'Posizionamento libero.';
+            document.getElementById('track-creation-status').textContent = `👆 Clicca sulla mappa per aggiungere punti al binario ${typeName}. ${extraInfo}`;
         }
 
         function addPointToTrack(lat, lng) {
@@ -1515,17 +1516,19 @@
 
             roadNetwork.forEach(segment => {
                 segment.points.forEach(point => {
-                    const distStart = map.distance([start.lat, start.lng], [point.lat, point.lng]);
-                    const distEnd = map.distance([end.lat, end.lng], [point.lat, point.lng]);
+                    const pLat = Array.isArray(point) ? point[0] : point.lat;
+                    const pLng = Array.isArray(point) ? point[1] : point.lng;
+                    const distStart = map.distance([start.lat, start.lng], [pLat, pLng]);
+                    const distEnd = map.distance([end.lat, end.lng], [pLat, pLng]);
 
                     if (distStart < minStartDist && distStart < 500) {
                         minStartDist = distStart;
-                        nearestStart = point;
+                        nearestStart = { lat: pLat, lng: pLng };
                     }
 
                     if (distEnd < minEndDist && distEnd < 500) {
                         minEndDist = distEnd;
-                        nearestEnd = point;
+                        nearestEnd = { lat: pLat, lng: pLng };
                     }
                 });
             });
@@ -1546,7 +1549,11 @@
             // Implementazione semplificata: trova il percorso più breve sulla rete
             // Costruisci un grafo dalla rete
             const graph = new Map();
-            const pointToKey = (p) => `${p.lat.toFixed(6)},${p.lng.toFixed(6)}`;
+            const pointToKey = (p) => {
+                const lat = Array.isArray(p) ? p[0] : (p.lat || 0);
+                const lng = Array.isArray(p) ? p[1] : (p.lng || 0);
+                return `${lat.toFixed(6)},${lng.toFixed(6)}`;
+            };
 
             network.forEach(segment => {
                 segment.points.forEach((point, idx) => {
@@ -1679,21 +1686,23 @@
             track.polyline.addTo(map);
             customTracks.push(track);
 
-            // Aggiungi alla rete appropriata
+            // Aggiungi alla rete appropriata (standardizza a [lat, lng])
+            const networkPoints = track.points.map(p => Array.isArray(p) ? p : [p.lat, p.lng]);
+
             if (currentTrackType === 'metro') {
                 metroTracks.push({
                     id: track.id,
-                    points: track.points
+                    points: networkPoints
                 });
             } else if (currentTrackType === 'tram') {
                 tramTracks.push({
                     id: track.id,
-                    points: track.points
+                    points: networkPoints
                 });
             } else if (currentTrackType === 'train') {
                 trainTracks.push({
                     id: track.id,
-                    points: track.points
+                    points: networkPoints
                 });
             }
 
@@ -1760,10 +1769,12 @@
                 osmTracks.forEach(segment => {
                     if (segment.points) {
                         segment.points.forEach(point => {
-                            const dist = map.distance([lat, lng], [point.lat, point.lng]);
+                            const pLat = Array.isArray(point) ? point[0] : point.lat;
+                            const pLng = Array.isArray(point) ? point[1] : point.lng;
+                            const dist = map.distance([lat, lng], [pLat, pLng]);
                             if (dist < nearestDistance && dist < 200) {
                                 nearestDistance = dist;
-                                nearestPoint = point;
+                                nearestPoint = { lat: pLat, lng: pLng };
                             }
                         });
                     }
@@ -1860,7 +1871,11 @@
 
             // Costruisci un grafo dalla rete
             const graph = new Map(); // Map<pointKey, Array<{point, distance, segment}>>
-            const pointToKey = (p) => `${p[0].toFixed(6)},${p[1].toFixed(6)}`;
+            const pointToKey = (p) => {
+                const lat = Array.isArray(p) ? p[0] : (p.lat || 0);
+                const lng = Array.isArray(p) ? p[1] : (p.lng || 0);
+                return `${lat.toFixed(6)},${lng.toFixed(6)}`;
+            };
             const MAX_CONNECTION_DIST = 50; // Metri
 
             // Aggiungi tutti i punti della rete al grafo
@@ -2980,9 +2995,9 @@
                     };
                     customTracks.push(track);
 
-                    if (trackData.type === 'metro') metroTracks.push({ id: track.id, points: track.points });
-                    else if (trackData.type === 'tram') tramTracks.push({ id: track.id, points: track.points });
-                    else if (trackData.type === 'train') trainTracks.push({ id: track.id, points: track.points });
+                    if (trackData.type === 'metro') metroTracks.push({ id: track.id, points: track.points.map(p => Array.isArray(p) ? p : [p.lat, p.lng]) });
+                    else if (trackData.type === 'tram') tramTracks.push({ id: track.id, points: track.points.map(p => Array.isArray(p) ? p : [p.lat, p.lng]) });
+                    else if (trackData.type === 'train') trainTracks.push({ id: track.id, points: track.points.map(p => Array.isArray(p) ? p : [p.lat, p.lng]) });
                 });
             }
 
