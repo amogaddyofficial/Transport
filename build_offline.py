@@ -5,29 +5,32 @@ import re
 
 def create_offline_version():
     source_dir = os.getcwd()
-    build_dir = os.path.join(source_dir, "offline_build")
-    output_zip = "transport_offline.zip"
     
-    # Create versions directory if not exists
-    versions_dir = os.path.join(source_dir, "versions")
-    if not os.path.exists(versions_dir):
-        os.makedirs(versions_dir)
+    # Version Configuration
+    CURRENT_VERSION = "3.2"
+    output_zip = f"Transport_v{CURRENT_VERSION}.zip"
+    beta_archive = "beta.zip"
+    
+    build_dir = os.path.join(source_dir, "offline_build")
+    
+    # 1. Manage Old Versions (Archive to beta.zip)
+    # Look for any existing Transport_v*.zip files
+    for file in os.listdir(source_dir):
+        if file.startswith("Transport_v") and file.endswith(".zip"):
+            if file != output_zip:
+                # This is an OLD version. Archive it.
+                print(f"Archiving old version {file} to {beta_archive}...")
+                with zipfile.ZipFile(beta_archive, 'a', zipfile.ZIP_DEFLATED) as beta:
+                    beta.write(file, file)
+                os.remove(file)
+                print(f"Moved {file} to {beta_archive}")
+            else:
+                # This is the CURRENT version (re-building). Just delete it.
+                os.remove(file)
 
-    # Archive previous version if exists
-    if os.path.exists(output_zip):
-        import time
-        timestamp = int(time.time())
-        # Keep only last 5 versions to avoid huge files? User didn't ask limits.
-        archive_name = f"transport_offline_v{timestamp}.zip"
-        shutil.move(output_zip, os.path.join(versions_dir, archive_name))
-        print(f"Archived previous version to versions/{archive_name}")
-
-    # Clean previous build
+    # Clean previous build dir
     if os.path.exists(build_dir):
         shutil.rmtree(build_dir)
-    if os.path.exists(output_zip):
-        # Should be gone due to move, but safety check
-        os.remove(output_zip)
         
     print(f"Creating build directory: {build_dir}")
     
@@ -35,7 +38,8 @@ def create_offline_version():
     exclude_items = {
         '.git', '.github', '__pycache__', 'venv', '.vscode', 
         'build_offline.py', output_zip, 'offline_build', 
-        'README.txt', 'LICENSE', '.gitignore'
+        'README.txt', 'LICENSE', '.gitignore',
+        beta_archive, 'versions' # Exclude the archive itself and the old versions folder
     }
     
     # Copy files
