@@ -497,28 +497,7 @@
                 </div>
 
                 <h3 style="margin-top: 20px;">🚉 <span data-i18n="game.stations.title">Stazioni e Reti</span></h3>
-                <div id="real-stations-controls" style="display: none;">
-                    <div
-                        style="padding: 10px; background: rgba(33, 150, 243, 0.3); border-radius: 8px; margin-bottom: 10px; font-size: 0.85em; color: rgba(44, 62, 80, 0.8);">
-                        🧩 <span data-i18n="game.stations.modLoad">Stazioni caricate da mod</span><br>
-                        <small data-i18n="game.stations.modLoadDesc">Le stazioni reali vengono caricate tramite mod (es.
-                            "real_stations")</small>
-                    </div>
-
-                    <button class="tool-button" id="load-stations-button" onclick="loadRealStations()">
-                        📥 <span data-i18n="game.stations.reloadStations">Ricarica Stazioni</span>
-                    </button>
-                    <button class="tool-button" id="load-roads-button" onclick="loadRoadsAndTracks()">
-                        🛣️ <span data-i18n="game.stations.reloadRoads">Ricarica Strade e Binari</span>
-                    </button>
-
-                    <div style="margin-top: 10px; display: flex; align-items: center; gap: 8px;">
-                        <input type="checkbox" id="auto-load-toggle" onchange="toggleAutoLoad(this.checked)" checked>
-                        <label for="auto-load-toggle" style="font-size: 0.85em; cursor: pointer;">
-                            🔄 <span data-i18n="game.stations.autoLoad">Caricamento automatico attivo</span>
-                        </label>
-                    </div>
-                </div>
+                <!-- Real Stations Controls removed (now handled by mod) -->
 
                 <div id="stations-info"
                     style="margin-top: 15px; padding: 10px; background: rgba(255, 255, 255, 0.5); border-radius: 10px; color: #2c3e50; font-size: 0.9em; border: 1px solid rgba(255, 255, 255, 0.7);">
@@ -667,7 +646,8 @@
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="i18n.js"></script>
-    <script src="mods-db.js"></script>
+    <script src="i18n.js"></script>
+    <!-- ModsDB removed -->
     <script src="saves-db.js"></script>
     <script>
         // Applica le traduzioni al caricamento della pagina
@@ -823,18 +803,9 @@
             }
         };
 
-        // Funzione per caricare mod JavaScript da IndexedDB
+        // Funzione per caricare mod JavaScript direttamente dalla cartella community
         async function loadMods() {
             try {
-                // Inizializza DB
-                if (window.ModsDB) {
-                    await ModsDB.init();
-                    console.log("ModsDB initialized");
-                } else {
-                    console.warn("ModsDB not found");
-                    return;
-                }
-
                 // Ottieni mod abilitate
                 const enabledMods = JSON.parse(localStorage.getItem('enabled_mods') || '[]');
 
@@ -843,35 +814,48 @@
                     return;
                 }
 
-                console.log(`[MOD LOADER] Loading ${enabledMods.length} mods...`);
+                // Carica l'indice delle mod per ottenere i percorsi corretti
+                let availableMods = [];
+                try {
+                    const response = await fetch('community/mods/index.json');
+                    if (response.ok) {
+                        const data = await response.json();
+                        availableMods = data.mods || [];
+                    }
+                } catch (e) {
+                    console.error("Error loading mod index:", e);
+                    return;
+                }
 
-                // Carica ogni mod dal DB
+                console.log(`[MOD LOADER] Loading ${enabledMods.length} enabled mods...`);
+
+                // Carica ogni mod abilitata
                 for (const modName of enabledMods) {
-                    try {
-                        const mod = await ModsDB.getMod(modName);
-                        if (mod && mod.code) {
-                            console.log(`[MOD LOADER] Executing mod: ${modName}`);
+                    const modInfo = availableMods.find(m => m.name === modName);
 
-                            // Esegui il codice della mod in modo sicuro
-                            const modScript = `
-                                (async function() {
-                                    try {
-                                        ${mod.code}
-                                        console.log("✅ Mod loaded: ${modName}");
-                                    } catch(e) {
-                                        console.error("❌ Error running mod ${modName}:", e);
-                                    }
-                                })();
-                            `;
+                    if (modInfo && modInfo.path) {
+                        console.log(`[MOD LOADER] Loading mod: ${modName} from ${modInfo.path}`);
 
-                            const scriptEl = document.createElement('script');
-                            scriptEl.textContent = modScript;
-                            document.body.appendChild(scriptEl);
-                        } else {
-                            console.warn(`⚠️ Mod content not found for: ${modName}`);
-                        }
-                    } catch (e) {
-                        console.error(`Failed to load mod ${modName}:`, e);
+                        // Crea elemento script per caricare il file
+                        const script = document.createElement('script');
+                        script.src = 'community/' + modInfo.path;
+                        script.async = false; // Importante: carica in ordine se necessario, o aspetta caricamento
+
+                        // Promise wrapper per gestire il caricamento
+                        await new Promise((resolve, reject) => {
+                            script.onload = () => {
+                                console.log(`✅ Mod loaded: ${modName}`);
+                                resolve();
+                            };
+                            script.onerror = (e) => {
+                                console.error(`❌ Error loading mod ${modName}:`, e);
+                                resolve(); // Risolvi comunque per non bloccare tutto
+                            };
+                            document.body.appendChild(script);
+                        });
+
+                    } else {
+                        console.warn(`⚠️ Mod info or path not found for enabled mod: ${modName}`);
                     }
                 }
 
@@ -885,14 +869,7 @@
         map.whenReady(async () => {
             await loadMods();
 
-            // Verifica se abilitare i controlli OSM
-            const enabledMods = JSON.parse(localStorage.getItem('enabled_mods') || '[]');
-            if (enabledMods.includes('real_stations')) {
-                const controls = document.getElementById('real-stations-controls');
-                if (controls) controls.style.display = 'block';
-            }
-
-            // Notifica alle mod che la mappa è pronta
+            // Verify OSM controls - REMOVED (Handled by mod)
             setTimeout(() => {
                 MOD_API.emit('map_ready');
             }, 100);
@@ -1026,346 +1003,13 @@
         });
 
         // Carica stazioni reali da OpenStreetMap usando Overpass API
-        async function loadRealStations(showAlert = true) {
-            // Verifica se la mod 'real_stations' è abilitata
-            const enabledMods = JSON.parse(localStorage.getItem('enabled_mods') || '[]');
-            if (!enabledMods.includes('real_stations')) {
-                console.log('[OSM] Real stations loading is disabled (mod "real_stations" not enabled)');
-                return;
-            }
-
-            const bounds = map.getBounds();
-            const south = bounds.getSouth();
-            const west = bounds.getWest();
-            const north = bounds.getNorth();
-            const east = bounds.getEast();
-
-            // Query Overpass per stazioni ferroviarie, metro, bus e tram
-            const query = `
-                [out:json][timeout:25];
-                (
-                    node["railway"="station"](${south},${west},${north},${east});
-                    node["railway"="subway_entrance"](${south},${west},${north},${east});
-                    node["public_transport"="station"](${south},${west},${north},${east});
-                    node["station"="subway"](${south},${west},${north},${east});
-                    node["highway"="bus_stop"](${south},${west},${north},${east});
-                    node["public_transport"="platform"]["bus"="yes"](${south},${west},${north},${east});
-                    node["railway"="tram_stop"](${south},${west},${north},${east});
-                    node["public_transport"="platform"]["tram"="yes"](${south},${west},${north},${east});
-                );
-                out body;
-            `;
-
-            try {
-                const button = document.getElementById('load-stations-button');
-                if (button) {
-                    button.textContent = '⏳ Caricamento...';
-                    button.disabled = true;
-                }
-
-                const response = await fetch('https://overpass-api.de/api/interpreter', {
-                    method: 'POST',
-                    body: query
-                });
-
-                const data = await response.json();
-
-                // Rimuovi stazioni esistenti
-                stationMarkers.forEach(marker => map.removeLayer(marker));
-                stations = [];
-                stationMarkers = [];
-
-                // Aggiungi nuove stazioni
-                data.elements.forEach(element => {
-                    if (element.type === 'node' && element.lat && element.lon) {
-                        // Determina il tipo di stazione
-                        let stationType = 'train'; // Default: treno/metro
-                        let emoji = '🚉';
-
-                        const tags = element.tags || {};
-
-                        // Controlla se è una fermata bus
-                        if (tags.highway === 'bus_stop' ||
-                            (tags.public_transport === 'platform' && tags.bus === 'yes') ||
-                            tags.amenity === 'bus_station') {
-                            stationType = 'bus';
-                            emoji = '🚌';
-                        }
-                        // Controlla se è una fermata tram
-                        else if (tags.railway === 'tram_stop' ||
-                            (tags.public_transport === 'platform' && tags.tram === 'yes')) {
-                            stationType = 'tram';
-                            emoji = '🚊';
-                        }
-                        // Treno/Metro (default)
-                        else if (tags.railway === 'station' ||
-                            tags.railway === 'subway_entrance' ||
-                            tags.public_transport === 'station' ||
-                            tags.station === 'subway') {
-                            stationType = 'train';
-                            emoji = '🚉';
-                        }
-
-                        const station = {
-                            id: element.id,
-                            lat: element.lat,
-                            lng: element.lon,
-                            name: tags.name || `Stazione ${element.id}`,
-                            type: stationType,
-                            emoji: emoji
-                        };
-                        stations.push(station);
-
-                        // Crea marker con emoji appropriata
-                        const icon = L.divIcon({
-                            className: 'station-marker station-' + stationType,
-                            html: emoji,
-                            iconSize: [30, 30],
-                            iconAnchor: [15, 15]
-                        });
-
-                        const marker = L.marker([station.lat, station.lng], { icon });
-                        marker.bindPopup(`${emoji} ${station.name}<br><small>Tipo: ${stationType === 'train' ? 'Treno/Metro' : stationType === 'bus' ? 'Bus' : 'Tram'}</small>`);
-
-                        // Aggiungi evento click sul marker per selezionare la stazione quando si crea una linea
-                        marker.on('click', (e) => {
-                            if (isCreatingLine) {
-                                e.originalEvent.stopPropagation(); // Previeni il click sulla mappa
-                                addStationToLine(station);
-                            }
-                        });
-
-                        // Associa il tipo di stazione al marker
-                        marker.stationType = stationType;
-                        marker.station = station;
-
-                        // Applica il filtro corrente
-                        if (!stationFilters[stationType]) {
-                            marker.setOpacity(0);
-                        }
-
-                        marker.addTo(map);
-                        stationMarkers.push(marker);
-                    }
-                });
-
-                updateStationsInfo();
-                if (showAlert) {
-                    alert(`✅ Caricate ${stations.length} stazioni reali!`);
-                }
-            } catch (e) {
-                console.error('Errore nel caricamento delle stazioni:', e);
-                let errorMessage = '❌ Errore nel caricamento delle stazioni.\n\n';
-
-                if (e.name === 'TypeError' && e.message.includes('fetch')) {
-                    errorMessage += '🔴 Problema di connessione:\n';
-                    errorMessage += '• Verifica la tua connessione internet\n';
-                    errorMessage += '• Il server Overpass potrebbe essere temporaneamente non disponibile\n';
-                    errorMessage += '• Prova a ricaricare la pagina';
-                } else if (e.name === 'AbortError' || e.message?.includes('timeout')) {
-                    errorMessage += '⏱️ Timeout della richiesta:\n';
-                    errorMessage += '• L\'area selezionata è troppo grande\n';
-                    errorMessage += '• Prova a zoomare su un\'area più piccola\n';
-                    errorMessage += '• Attendi qualche secondo e riprova';
-                } else if (e.message?.includes('JSON') || e.message?.includes('parse')) {
-                    errorMessage += '📄 Errore nel formato dei dati:\n';
-                    errorMessage += '• I dati ricevuti non sono validi\n';
-                    errorMessage += '• Prova a ricaricare o cambiare area';
-                } else if (e.message?.includes('network') || e.message?.includes('Failed to fetch')) {
-                    errorMessage += '🌐 Errore di rete:\n';
-                    errorMessage += '• Verifica la connessione internet\n';
-                    errorMessage += '• Controlla se il firewall blocca le richieste\n';
-                    errorMessage += '• Prova con un\'altra rete';
-                } else {
-                    errorMessage += `🔴 Errore tecnico:\n`;
-                    errorMessage += `• Tipo: ${e.name || 'Sconosciuto'}\n`;
-                    errorMessage += `• Messaggio: ${e.message || 'Nessun dettaglio disponibile'}\n`;
-                    errorMessage += `• Controlla la console per maggiori dettagli`;
-                }
-
-                if (showAlert) {
-                    alert(errorMessage);
-                }
-            } finally {
-                const button = document.getElementById('load-stations-button');
-                if (button) {
-                    button.textContent = '📥 Carica Stazioni Reali';
-                    button.disabled = false;
-                }
-            }
-        }
+        // loadRealStations removed (moved to mod)
 
         // Carica strade e binari da OpenStreetMap
-        async function loadRoadsAndTracks(showAlert = true) {
-            // Verifica se la mod 'real_stations' è abilitata
-            const enabledMods = JSON.parse(localStorage.getItem('enabled_mods') || '[]');
-            if (!enabledMods.includes('real_stations')) {
-                console.log('[OSM] Roads and tracks loading is disabled (mod "real_stations" not enabled)');
-                return;
-            }
-
-            const bounds = map.getBounds();
-            const south = bounds.getSouth();
-            const west = bounds.getWest();
-            const north = bounds.getNorth();
-            const east = bounds.getEast();
-
-            // Query Overpass per strade e binari
-            const query = `
-                [out:json][timeout:30];
-                (
-                    way["highway"]["highway"!="footway"]["highway"!="path"]["highway"!="cycleway"]["highway"!="steps"](${south},${west},${north},${east});
-                    way["railway"="tram"](${south},${west},${north},${east});
-                    way["railway"="rail"](${south},${west},${north},${east});
-                    way["railway"="subway"](${south},${west},${north},${east});
-                    way["railway"="light_rail"](${south},${west},${north},${east});
-                );
-                (._;>;);
-                out body;
-            `;
-
-            try {
-                const response = await fetch('https://overpass-api.de/api/interpreter', {
-                    method: 'POST',
-                    body: query
-                });
-
-                const data = await response.json();
-
-                // Reset reti
-                roadNetwork = [];
-                tramTracks = [];
-                trainTracks = [];
-                metroTracks = [];
-
-                // Processa i way
-                const nodeMap = new Map();
-                data.elements.forEach(element => {
-                    if (element.type === 'node') {
-                        nodeMap.set(element.id, { lat: element.lat, lng: element.lon });
-                    }
-                });
-
-                data.elements.forEach(element => {
-                    if (element.type === 'way' && element.nodes) {
-                        const points = element.nodes
-                            .map(nodeId => nodeMap.get(nodeId))
-                            .filter(p => p !== undefined)
-                            .map(p => [p.lat, p.lng]);
-
-                        if (points.length < 2) return;
-
-                        const tags = element.tags || {};
-
-                        // Strade per bus
-                        if (tags.highway &&
-                            tags.highway !== 'footway' &&
-                            tags.highway !== 'path' &&
-                            tags.highway !== 'cycleway' &&
-                            tags.highway !== 'steps') {
-                            roadNetwork.push({
-                                id: element.id,
-                                points: points,
-                                type: tags.highway
-                            });
-                        }
-
-                        // Binari tram
-                        if (tags.railway === 'tram') {
-                            tramTracks.push({
-                                id: element.id,
-                                points: points
-                            });
-                        }
-
-                        // Binari treni
-                        if (tags.railway === 'rail') {
-                            trainTracks.push({
-                                id: element.id,
-                                points: points
-                            });
-                        }
-
-                        // Binari metro
-                        if (tags.railway === 'subway' || tags.railway === 'light_rail') {
-                            metroTracks.push({
-                                id: element.id,
-                                points: points
-                            });
-                        }
-                    }
-                });
-
-                if (showAlert) {
-                    alert(`✅ Caricate: ${roadNetwork.length} strade, ${tramTracks.length} binari tram, ${trainTracks.length} binari treni, ${metroTracks.length} binari metro`);
-                }
-            } catch (e) {
-                console.error('Errore nel caricamento di strade e binari:', e);
-                let errorMessage = '❌ Errore nel caricamento di strade e binari.\n\n';
-
-                if (e.name === 'TypeError' && e.message.includes('fetch')) {
-                    errorMessage += '🔴 Problema di connessione:\n';
-                    errorMessage += '• Verifica la tua connessione internet\n';
-                    errorMessage += '• Il server Overpass potrebbe essere temporaneamente non disponibile\n';
-                    errorMessage += '• Prova a ricaricare la pagina';
-                } else if (e.name === 'AbortError' || e.message?.includes('timeout')) {
-                    errorMessage += '⏱️ Timeout della richiesta:\n';
-                    errorMessage += '• L\'area selezionata è troppo grande\n';
-                    errorMessage += '• Prova a zoomare su un\'area più piccola (zoom 14-16)\n';
-                    errorMessage += '• Attendi qualche secondo e riprova';
-                } else if (e.message?.includes('JSON') || e.message?.includes('parse')) {
-                    errorMessage += '📄 Errore nel formato dei dati:\n';
-                    errorMessage += '• I dati ricevuti non sono validi\n';
-                    errorMessage += '• Prova a ricaricare o cambiare area';
-                } else if (e.message?.includes('network') || e.message?.includes('Failed to fetch')) {
-                    errorMessage += '🌐 Errore di rete:\n';
-                    errorMessage += '• Verifica la connessione internet\n';
-                    errorMessage += '• Controlla se il firewall blocca le richieste\n';
-                    errorMessage += '• Prova con un\'altra rete';
-                } else {
-                    errorMessage += `🔴 Errore tecnico:\n`;
-                    errorMessage += `• Tipo: ${e.name || 'Sconosciuto'}\n`;
-                    errorMessage += `• Messaggio: ${e.message || 'Nessun dettaglio disponibile'}\n`;
-                    errorMessage += `• Controlla la console per maggiori dettagli`;
-                }
-
-                if (showAlert) {
-                    alert(errorMessage);
-                }
-            }
-        }
+        // loadRoadsAndTracks removed (moved to mod)
 
         // Avvia il caricamento automatico delle stazioni ogni 3 minuti
-        function startAutoLoadStations() {
-            // Carica subito le stazioni e le reti
-            loadRealStations(false);
-            loadRoadsAndTracks(false);
-
-            // Poi carica ogni 3 minuti (180000 millisecondi)
-            if (autoLoadStationsInterval) {
-                clearInterval(autoLoadStationsInterval);
-            }
-            autoLoadStationsInterval = setInterval(() => {
-                loadRealStations(false);
-                loadRoadsAndTracks(false);
-            }, 180000); // 3 minuti = 180000 ms
-        }
-
-        // Ferma il caricamento automatico
-        function stopAutoLoadStations() {
-            if (autoLoadStationsInterval) {
-                clearInterval(autoLoadStationsInterval);
-                autoLoadStationsInterval = null;
-            }
-        }
-
-        function toggleAutoLoad(enabled) {
-            if (enabled) {
-                startAutoLoadStations();
-            } else {
-                stopAutoLoadStations();
-            }
-        }
+        // Auto-load helpers removed (moved to mod)
 
         function findNearestStation(lat, lng) {
             let minDist = Infinity;
@@ -3212,25 +2856,8 @@
             startAutoLoadStations();
         }
 
-        // Avvia il caricamento automatico delle stazioni
-        startAutoLoadStations();
-
-        // Aggiorna stazioni, strade e binari quando la mappa viene spostata o zoomata
-        map.on('moveend', () => {
-            // Ricarica tutto quando l'utente naviga in una nuova area
-            if (autoLoadStationsInterval) {
-                loadRealStations(false);
-                loadRoadsAndTracks(false);
-            }
-        });
-
-        // Carica anche quando si fa zoom
-        map.on('zoomend', () => {
-            if (autoLoadStationsInterval) {
-                loadRealStations(false);
-                loadRoadsAndTracks(false);
-            }
-        });
+        // map.on('moveend') logic for autoloading removed (mod handles it)
+        // map.on('zoomend') logic for autoloading removed (mod handles it)
 
         // Funzione per gestire i filtri delle stazioni
         function toggleStationFilter(type) {

@@ -7,9 +7,9 @@ def create_offline_version():
     source_dir = os.getcwd()
     
     # Version Configuration
-    CURRENT_VERSION = "3.2"
-    output_zip = f"Transport_v{CURRENT_VERSION}.zip"
-    beta_archive = "beta.zip"
+    CURRENT_VERSION = "3.3"
+    output_zip = f"downloads/Transport_v{CURRENT_VERSION}.zip"
+    beta_archive = "downloads/beta.zip"
     
     build_dir = os.path.join(source_dir, "offline_build")
     
@@ -39,7 +39,7 @@ def create_offline_version():
         '.git', '.github', '__pycache__', 'venv', '.vscode', 
         'build_offline.py', output_zip, 'offline_build', 
         'README.txt', 'LICENSE', '.gitignore',
-        beta_archive, 'versions', 'transport_offline.zip' # Exclude archive, old versions, and legacy zip
+        'downloads', 'versions', 'transport_offline.zip' # Exclude archives, old versions, and legacy zip
     }
     
     # Copy files

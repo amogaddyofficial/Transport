@@ -280,7 +280,7 @@
     </div>
 
     <script src="i18n.js"></script>
-    <script src="mods-db.js"></script>
+    <script src="i18n.js"></script>
     <script>
         function applyTranslations() {
             const language = localStorage.getItem('language') || 'it';
@@ -296,39 +296,12 @@
 
         document.addEventListener('DOMContentLoaded', async () => {
             applyTranslations();
-            await ModsDB.init();
-            await loadFolderMods(); // Carica mod dalla cartella (gestita manualmente)
+            // await ModsDB.init(); // REMOVED
+            // await loadFolderMods(); // REMOVED - renderModsList now fetches directly
             await renderModsList();
         });
 
-        // Nuova funzione per caricare le mod dalla cartella fisica (tramite index.json)
-        async function loadFolderMods() {
-            try {
-                // Svuota il DB per caricare solo quelle in cartella (per evitare rimasugli di upload precedenti)
-                await ModsDB.clearAll();
-
-                const response = await fetch('community/mods/index.json');
-                if (!response.ok) return;
-
-                const data = await response.json();
-                const folderMods = data.mods || [];
-
-                for (const modInfo of folderMods) {
-                    try {
-                        const modRes = await fetch('community/' + modInfo.path);
-                        if (modRes.ok) {
-                            const code = await modRes.text();
-                            await ModsDB.saveMod(modInfo.name, code);
-                            console.log(`Mod ${modInfo.name} loaded from folder.`);
-                        }
-                    } catch (e) {
-                        console.error(`Failed to load mod ${modInfo.name}:`, e);
-                    }
-                }
-            } catch (e) {
-                console.log("Nessun catalogo mod locale trovato (mods/index.json).");
-            }
-        }
+        // Helper to load mods from index.json (Moved logic to renderModsList)
 
         /* Tabs logic removed */
 
@@ -349,7 +322,22 @@
 
         async function renderModsList() {
             const container = document.getElementById('mods-list');
-            const mods = await ModsDB.getAllMods();
+            let mods = [];
+
+            try {
+                const response = await fetch('community/mods/index.json?v=' + Date.now());
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log("Mods loaded:", data);
+                    mods = data.mods || [];
+                } else {
+                    console.error("Failed to load mods index:", response.status, response.statusText);
+                    container.innerHTML = `<div class="status-error">Errore caricamento: ${response.status}</div>`;
+                }
+            } catch (e) {
+                console.error("Error loading mods list:", e);
+                container.innerHTML = `<div class="status-error">Eccezione: ${e.message}</div>`;
+            }
 
             if (mods.length === 0) {
                 container.innerHTML = `<div class="empty-state">${t('mods.noMods')}</div>`;
@@ -358,11 +346,13 @@
 
             container.innerHTML = mods.map(mod => {
                 const isEnabled = enabledMods.includes(mod.name);
-                const sizeKB = (mod.size / 1024).toFixed(2);
+                // Size is not available in simple JSON list usually, or we can add it if needed. Removing for now or just generic text.
                 return `
                     <div class="mod-item">
                         <div class="mod-info">
-                            <div class="mod-name">🧩 ${mod.name}</div>
+                            <div class="mod-name">🧩 ${mod.title || mod.name}</div>
+                            <div class="mod-path">${mod.description || ''}</div>
+                             <div class="mod-path" style="font-size: 0.8em; color: #999;">${mod.path}</div>
                             <div class="mod-path">Status: ${isEnabled ? t('mods.active') : t('mods.disabled')}</div>
                         </div>
                         <div style="display: flex; align-items: center;">
