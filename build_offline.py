@@ -39,7 +39,7 @@ def create_offline_version():
         '.git', '.github', '__pycache__', 'venv', '.vscode', 
         'build_offline.py', output_zip, 'offline_build', 
         'README.txt', 'LICENSE', '.gitignore',
-        beta_archive, 'versions' # Exclude the archive itself and the old versions folder
+        beta_archive, 'versions', 'transport_offline.zip' # Exclude archive, old versions, and legacy zip
     }
     
     # Copy files

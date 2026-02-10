@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="it">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -27,9 +28,17 @@
         }
 
         @keyframes gradientShift {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
         }
 
         .container {
@@ -58,6 +67,7 @@
                 opacity: 0;
                 transform: translateY(30px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -185,20 +195,21 @@
             h1 {
                 font-size: 2.2em;
             }
-            
+
             .glass-card {
                 padding: 40px 30px;
             }
         }
     </style>
 </head>
+
 <body>
     <a href="index.html" class="back-button">⬅️ <span id="back-text">Indietro</span></a>
-    
+
     <div class="container">
         <div class="glass-card">
             <h1>⚙️ <span id="settings-title">Impostazioni</span></h1>
-            
+
             <div class="settings-section">
                 <h2 id="language-title">🌐 Lingua / Language / Idioma</h2>
                 <div class="language-selector">
@@ -217,10 +228,21 @@
                         <span class="language-flag">🇪🇸</span>
                         <label for="radio-es">Español</label>
                     </div>
+                    <div class="language-option" id="lang-fr">
+                        <input type="radio" name="language" value="fr" id="radio-fr">
+                        <span class="language-flag">🇫🇷</span>
+                        <label for="radio-fr">Français</label>
+                    </div>
+                    <div class="language-option" id="lang-de">
+                        <input type="radio" name="language" value="de" id="radio-de">
+                        <span class="language-flag">🇩🇪</span>
+                        <label for="radio-de">Deutsch</label>
+                    </div>
                 </div>
             </div>
-            
-            <button class="save-button" onclick="saveLanguage()" id="save-button">💾 <span id="save-text">Salva</span></button>
+
+            <button class="save-button" onclick="saveLanguage()" id="save-button">💾 <span
+                    id="save-text">Salva</span></button>
         </div>
     </div>
 
@@ -228,7 +250,8 @@
     <script>
         // Carica la lingua salvata
         let currentLanguage = localStorage.getItem('language') || 'it';
-        
+        const supportedLanguages = ['it', 'en', 'es', 'fr', 'de'];
+
         // Inizializza la pagina con la lingua corrente
         document.addEventListener('DOMContentLoaded', () => {
             updateLanguageUI();
@@ -239,11 +262,12 @@
             // Seleziona il radio button corretto
             document.getElementById(`radio-${currentLanguage}`).checked = true;
             document.getElementById(`lang-${currentLanguage}`).classList.add('active');
-            
+
             // Rimuovi active da altri
-            ['it', 'en', 'es'].forEach(lang => {
+            supportedLanguages.forEach(lang => {
                 if (lang !== currentLanguage) {
-                    document.getElementById(`lang-${lang}`).classList.remove('active');
+                    const el = document.getElementById(`lang-${lang}`);
+                    if (el) el.classList.remove('active');
                 }
             });
         }
@@ -272,7 +296,7 @@
 
         function applyLanguage(lang) {
             const translations = i18n[lang] || i18n.it;
-            
+
             // Aggiorna i testi della pagina impostazioni
             document.getElementById('settings-title').textContent = translations.settings.title;
             document.getElementById('language-title').textContent = translations.settings.language;
@@ -284,7 +308,7 @@
             localStorage.setItem('language', currentLanguage);
             const translations = i18n[currentLanguage] || i18n.it;
             alert(translations.settings.saved || 'Impostazioni salvate!');
-            
+
             // Reindirizza alla home
             setTimeout(() => {
                 window.location.href = 'index.html';
@@ -292,6 +316,5 @@
         }
     </script>
 </body>
+
 </html>
-
-

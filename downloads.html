@@ -104,13 +104,14 @@
 <body>
     <div class="container">
         <div class="glass-card">
-            <h1>📥 Download</h1>
+            <h1 data-i18n="downloads.title">📥 Download</h1>
 
             <div style="margin-bottom: 40px;">
-                <h2 style="margin-bottom: 10px;">Versione Corrente</h2>
-                <p style="margin-bottom: 20px; color: #666;">L'ultima versione stabile del gioco.</p>
+                <h2 style="margin-bottom: 10px;" data-i18n="downloads.currentTitle">Versione Corrente</h2>
+                <p style="margin-bottom: 20px; color: #666;" data-i18n="downloads.currentDesc">L'ultima versione stabile
+                    del gioco.</p>
                 <a href="Transport_v3.2.zip" class="download-btn" id="latest-download">
-                    Scarica v3.2
+                    <span data-i18n="maps.download">Scarica</span> v3.2
                 </a>
                 <br>
                 <small style="color: #888;">Include tutte le ultime funzionalità e fix.</small>
@@ -119,16 +120,30 @@
             <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;">
 
             <div>
-                <h3>🗄️ Archivio Versioni</h3>
-                <p>Scarica le versioni precedenti (Beta).</p>
-                <a href="beta.zip" class="beta-btn">
+                <h3 data-i18n="downloads.betaTitle">🗄️ Archivio Versioni</h3>
+                <p data-i18n="downloads.betaDesc">Scarica le versioni precedenti (Beta).</p>
+                <a href="beta.zip" class="beta-btn" data-i18n="maps.download">
                     Scarica Archivio Beta (.zip)
                 </a>
             </div>
 
-            <a href="index.html" class="back-link">⬅️ Torna alla Home</a>
+            <a href="index.html" class="back-link" data-i18n="downloads.back">⬅️ Torna alla Home</a>
         </div>
     </div>
+
+    <script src="i18n.js"></script>
+    <script>
+        function applyTranslations() {
+            const language = localStorage.getItem('language') || 'it';
+            document.documentElement.lang = language;
+            document.querySelectorAll('[data-i18n]').forEach(element => {
+                const key = element.getAttribute('data-i18n');
+                const translation = t(key, language);
+                if (translation) element.textContent = translation;
+            });
+        }
+        document.addEventListener('DOMContentLoaded', applyTranslations);
+    </script>
 </body>
 
 </html>

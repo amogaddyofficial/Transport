@@ -242,11 +242,11 @@
 </head>
 
 <body>
-    <a href="index.html" class="back-button">⬅️ Home</a>
+    <a href="index.html" class="back-button">⬅️ <span data-i18n="game.back">Menu</span></a>
 
     <div class="container">
         <div class="glass-card">
-            <h1>🧩 Mods</h1>
+            <h1>🧩 <span data-i18n="mods.title">Mods</span></h1>
 
             <div style="margin-bottom: 20px;"></div>
 
@@ -255,18 +255,17 @@
             <!-- TAB LOCAL -->
             <div id="tab-local">
                 <div class="input-group">
-                    <label for="mod-file-upload">➕ Carica Mod (.js)</label>
-                    <input type="file" id="mod-file-upload" accept=".js"
-                        style="background: white; padding: 10px; border-radius: 10px; width: 100%;">
+                    <p style="color: #2c3e50; font-size: 0.95em; line-height: 1.5;">
+                        🧩 <strong data-i18n="mods.title">Mod di Sistema</strong><br>
+                        <span data-i18n="mods.folderInfo">Le mod vengono caricate automaticamente dalla cartella
+                            <code>community/mods</code>.</span>
+                        <br>
+                        <span data-i18n="mods.active">Puoi attivarle o disattivarle utilizzando gli interruttori qui
+                            sotto.</span>
+                    </p>
                 </div>
 
-                <button class="save-button" onclick="addNewMod()"
-                    style="background: rgba(76, 175, 80, 0.6); width: 100%;">
-                    📤 Carica e Installa Mod
-                </button>
-
                 <div style="margin-top: 30px;">
-                    <h3>🧩 Mod Installate</h3>
                     <div id="mods-list" style="margin-top: 15px;">
                         <!-- Mods will be listed here -->
                     </div>
@@ -280,36 +279,43 @@
         </div>
     </div>
 
+    <script src="i18n.js"></script>
     <script src="mods-db.js"></script>
     <script>
+        function applyTranslations() {
+            const language = localStorage.getItem('language') || 'it';
+            document.documentElement.lang = language;
+            document.querySelectorAll('[data-i18n]').forEach(element => {
+                const key = element.getAttribute('data-i18n');
+                const translation = t(key, language);
+                if (translation) element.textContent = translation;
+            });
+        }
+
         let enabledMods = JSON.parse(localStorage.getItem('enabled_mods') || '[]');
 
         document.addEventListener('DOMContentLoaded', async () => {
+            applyTranslations();
             await ModsDB.init();
             await loadFolderMods(); // Carica mod dalla cartella (gestita manualmente)
             await renderModsList();
-            // Community mods fetching removed as per request
         });
 
         // Nuova funzione per caricare le mod dalla cartella fisica (tramite index.json)
         async function loadFolderMods() {
             try {
-                const response = await fetch('mods/index.json');
-                if (!response.ok) return; // Se non c'è index, pazienza
+                // Svuota il DB per caricare solo quelle in cartella (per evitare rimasugli di upload precedenti)
+                await ModsDB.clearAll();
+
+                const response = await fetch('community/mods/index.json');
+                if (!response.ok) return;
 
                 const data = await response.json();
                 const folderMods = data.mods || [];
 
                 for (const modInfo of folderMods) {
-                    // Controlla se la mod è già nel DB, se no la aggiunge/aggiorna
-                    // Nota: Per le mod "folder", potremmo volerle ricaricare ogni volta
-                    // Ma per ora le trattiamo come "installate".
-                    // O meglio: le mostriamo nella lista "Le Mie Mod" con un'icona diversa?
-                    // L'utente vuole che il menu mostri le mod nella cartella.
-
-                    // Fetch del contenuto della mod
                     try {
-                        const modRes = await fetch(modInfo.path);
+                        const modRes = await fetch('community/' + modInfo.path);
                         if (modRes.ok) {
                             const code = await modRes.text();
                             await ModsDB.saveMod(modInfo.name, code);
@@ -329,34 +335,7 @@
         // Aggiorna stili bottoni (semplificato inline per brevità nel replace)
         /* Tabs styling removed */
 
-        // --- LOCAL LOGIC (Existing) ---
-        async function addNewMod() {
-            const fileInput = document.getElementById('mod-file-upload');
-            const file = fileInput.files[0];
-            if (!file) { showStatus('Seleziona un file .js', 'error'); return; }
-            if (!file.name.endsWith('.js')) { showStatus('Deve essere .js', 'error'); return; }
-
-            const modName = file.name.replace('.js', '');
-            const existingMod = await ModsDB.getMod(modName);
-            if (existingMod && !confirm(`Mod "${modName}" esiste già. Sovrascrivere?`)) return;
-
-            const reader = new FileReader();
-            reader.onload = async function (e) {
-                try {
-                    await ModsDB.saveMod(modName, e.target.result);
-                    if (!enabledMods.includes(modName)) {
-                        enabledMods.push(modName);
-                        localStorage.setItem('enabled_mods', JSON.stringify(enabledMods));
-                    }
-                    fileInput.value = '';
-                    await renderModsList();
-                    showStatus(`✅ Mod "${modName}" installata!`, 'success');
-                } catch (err) {
-                    showStatus('Errore: ' + err, 'error');
-                }
-            };
-            reader.readAsText(file);
-        }
+        // --- LOCAL LOGIC (Refactored) ---
 
         async function toggleMod(modName) {
             if (enabledMods.includes(modName)) {
@@ -366,21 +345,6 @@
             }
             localStorage.setItem('enabled_mods', JSON.stringify(enabledMods));
             await renderModsList();
-            updateFolderStructure();
-        }
-
-        async function deleteMod(modName) {
-            if (!confirm(`Vuoi rimuovere la mod "${modName}"?`)) return;
-            try {
-                await ModsDB.deleteMod(modName);
-                enabledMods = enabledMods.filter(m => m !== modName);
-                localStorage.setItem('enabled_mods', JSON.stringify(enabledMods));
-                await renderModsList();
-                updateFolderStructure();
-                showStatus(`Mod eliminata`, 'success');
-            } catch (error) {
-                showStatus('Errore: ' + error, 'error');
-            }
         }
 
         async function renderModsList() {
@@ -388,7 +352,7 @@
             const mods = await ModsDB.getAllMods();
 
             if (mods.length === 0) {
-                container.innerHTML = '<div class="empty-state">Nessuna mod installata.</div>';
+                container.innerHTML = `<div class="empty-state">${t('mods.noMods')}</div>`;
                 return;
             }
 
@@ -399,69 +363,21 @@
                     <div class="mod-item">
                         <div class="mod-info">
                             <div class="mod-name">🧩 ${mod.name}</div>
-                            <div class="mod-path">Dim: ${sizeKB} KB</div>
+                            <div class="mod-path">Status: ${isEnabled ? t('mods.active') : t('mods.disabled')}</div>
                         </div>
                         <div style="display: flex; align-items: center;">
                             <label class="toggle-switch">
                                 <input type="checkbox" ${isEnabled ? 'checked' : ''} onchange="toggleMod('${mod.name}')">
                                 <span class="toggle-slider"></span>
                             </label>
-                            <!-- Tasto Elimina rimosso come richiesto -->
-                            <!-- <button class="delete-button" onclick="deleteMod('${mod.name}')">🗑️</button> -->
                         </div>
                     </div>
                 `;
             }).join('');
         }
 
-        // --- COMMUNITY LOGIC ---
-        async function loadCommunityMods() {
-            const container = document.getElementById('community-mods-list');
-            try {
-                const response = await fetch('community/index.json');
-                const data = await response.json();
-                const mods = data.mods || [];
+        // --- COMMUNITY LOGIC REMOVED ---
 
-                if (mods.length === 0) {
-                    container.innerHTML = '<p>Nessuna mod nella community.</p>';
-                    return;
-                }
-
-                container.innerHTML = mods.map(mod => `
-                    <div class="mod-item">
-                        <div class="mod-info">
-                            <div class="mod-name">🧩 ${mod.name}</div>
-                            <div class="mod-path">Autore: ${mod.author}</div>
-                            <div style="font-size: 0.8em; color: #666;">${mod.description}</div>
-                        </div>
-                        <button class="save-button" style="padding: 5px 15px; font-size: 0.9em;" onclick="installCommunityMod('${mod.file}', '${mod.name}')">⬇️ Installa</button>
-                    </div>
-                `).join('');
-            } catch (e) {
-                container.innerHTML = 'Errore caricamento community mod.';
-                console.error(e);
-            }
-        }
-
-        async function installCommunityMod(filename, modName) {
-            try {
-                showStatus(`Scaricamento ${modName}...`, 'success');
-                const response = await fetch(`community/mods/${filename}`);
-                if (!response.ok) throw new Error("File mod non trovato");
-                const code = await response.text();
-
-                await ModsDB.saveMod(modName, code);
-                if (!enabledMods.includes(modName)) {
-                    enabledMods.push(modName);
-                    localStorage.setItem('enabled_mods', JSON.stringify(enabledMods));
-                }
-                showStatus(`✅ Mod "${modName}" installata!`, 'success');
-                await renderModsList();
-                showTab('local');
-            } catch (e) {
-                showStatus('Errore installazione: ' + e.message, 'error');
-            }
-        }
 
         // Utility
         /* Folder structure visualizer removed as per request */

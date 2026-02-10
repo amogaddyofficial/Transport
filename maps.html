@@ -198,15 +198,19 @@
 </head>
 
 <body>
-    <a href="index.html" class="back-button">⬅️ Menu</a>
+    <a href="index.html" class="back-button">⬅️ <span data-i18n="game.back">Menu</span></a>
 
     <div class="container">
         <div class="glass-card">
-            <h1>🗺️ Gestione Mappe</h1>
+            <h1>🗺️ <span data-i18n="maps.title">Gestione Mappe</span></h1>
 
             <div class="tabs">
-                <button class="tab-button active" onclick="showTab('local')">📂 Le Mie Mappe</button>
-                <button class="tab-button" onclick="showTab('community')">🌐 Community Maps</button>
+                <button class="tab-button active" onclick="showTab('local', event)">
+                    <span data-i18n="maps.localTab">📂 Le Mie Mappe</span>
+                </button>
+                <button class="tab-button" onclick="showTab('community', event)">
+                    <span data-i18n="maps.communityTab">🌐 Community Maps</span>
+                </button>
             </div>
 
             <div id="status-msg" class="status-message"></div>
@@ -214,21 +218,22 @@
             <!-- Tab: Local Maps -->
             <div id="tab-local">
                 <div class="input-group" style="background: rgba(255,255,255,0.4); padding: 20px; border-radius: 15px;">
-                    <h3>📥 Importa Mappa</h3>
-                    <div style="margin-bottom: 10px; color: #666; font-size: 0.9em;">
-                        Supporta file: <code>.tranmap</code>, <code>.txt</code>, <code>.json</code>
+                    <h3 data-i18n="maps.import">📥 Importa Mappa</h3>
+                    <div style="margin-bottom: 10px; color: #666; font-size: 0.9em;" data-i18n="maps.importDesc">
+                        Supporta file: .tranmap, .txt, .json
                     </div>
                     <input type="file" id="map-file-upload" accept=".json,.tranmap,.txt">
-                    <button class="action-button secondary" onclick="importMap()">Importa</button>
-
+                    <button class="action-button secondary" onclick="importMap()"
+                        data-i18n="maps.import">Importa</button>
                 </div>
 
                 <div
                     style="background: rgba(255,255,255,0.4); padding: 15px; border-radius: 15px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between;">
-                    <span style="font-weight: bold; color: #2c3e50;">⚙️ Opzioni Export:</span>
+                    <span style="font-weight: bold; color: #2c3e50;" data-i18n="maps.exportOptions">⚙️ Opzioni
+                        Export:</span>
                     <div>
-                        <label for="export-format"
-                            style="display: inline-block; margin-right: 10px; margin-bottom: 0;">Formato:</label>
+                        <label for="export-format" style="display: inline-block; margin-right: 10px; margin-bottom: 0;"
+                            data-i18n="maps.format">Formato:</label>
                         <select id="export-format" style="padding: 5px; border-radius: 5px;">
                             <option value="tranmap">.tranmap (Consigliato)</option>
                             <option value="txt">.txt (Testo Semplice)</option>
@@ -247,11 +252,9 @@
             <div id="tab-community" style="display: none;">
                 <div
                     style="text-align: left; margin-bottom: 20px; padding: 15px; background: rgba(255,255,255,0.5); border-radius: 10px;">
-                    <p>🌐 <strong>Mappe della Community</strong></p>
-                    <p style="font-size: 0.9em; color: #555;">
+                    <p>🌐 <strong data-i18n="maps.communityTitle">Mappe della Community</strong></p>
+                    <p style="font-size: 0.9em; color: #555;" data-i18n="maps.communityDesc">
                         Queste mappe sono condivise da tutti. Puoi scaricarle e giocarci.
-                        Per pubblicare la tua mappa, esportala come <code>.tranmap</code> e inviala tramite Pull Request
-                        su GitHub.
                     </p>
                     <div style="margin-top: 10px;">
                         <button class="action-button danger"
@@ -269,20 +272,33 @@
         </div>
     </div>
 
+    <script src="i18n.js"></script>
     <script src="saves-db.js"></script>
     <script>
+        // Sistema di traduzione
+        function applyTranslations() {
+            const language = localStorage.getItem('language') || 'it';
+            document.documentElement.lang = language;
+            document.querySelectorAll('[data-i18n]').forEach(element => {
+                const key = element.getAttribute('data-i18n');
+                const translation = t(key, language);
+                if (translation) element.textContent = translation;
+            });
+        }
+
         // Init
         document.addEventListener('DOMContentLoaded', () => {
+            applyTranslations();
             loadLocalMaps();
             loadCommunityMaps();
         });
 
-        function showTab(tabName) {
+        function showTab(tabName, event) {
             document.getElementById('tab-local').style.display = tabName === 'local' ? 'block' : 'none';
             document.getElementById('tab-community').style.display = tabName === 'community' ? 'block' : 'none';
 
             document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
+            if (event) event.currentTarget.classList.add('active');
         }
 
         function showStatus(msg, type) {
@@ -298,7 +314,7 @@
             try {
                 const saves = await SavesDB.getAllSaves();
                 if (saves.length === 0) {
-                    container.innerHTML = '<p>Nessuna mappa trovata.</p>';
+                    container.innerHTML = `<p>${t('maps.empty')}</p>`;
                     return;
                 }
 
@@ -306,11 +322,11 @@
                     <div class="map-item">
                         <div class="map-info">
                             <h3>${save.name}</h3>
-                            <p>Ultimo salvataggio: ${new Date(save.lastSaveTime).toLocaleDateString()}</p>
+                            <p>${t('game.time.time')}: ${new Date(save.lastSaveTime).toLocaleDateString()}</p>
                         </div>
                         <div>
-                            <button class="action-button secondary" onclick="exportMap('${save.id}')">💾 Esporta</button>
-                            <button class="action-button danger" onclick="deleteLocalMap('${save.id}')">🗑️</button>
+                            <button class="action-button secondary" onclick="exportMap('${save.id}')">💾 ${t('maps.export')}</button>
+                            <button class="action-button danger" onclick="deleteLocalMap('${save.id}')">${t('maps.delete')}</button>
                         </div>
                     </div>
                 `).join('');
@@ -368,7 +384,7 @@
                 const maps = data.maps || [];
 
                 if (maps.length === 0) {
-                    container.innerHTML = '<p>Nessuna mappa nella community.</p>';
+                    container.innerHTML = `<p>${t('maps.empty')}</p>`;
                     return;
                 }
 
@@ -380,7 +396,7 @@
                             <p style="font-size: 0.85em;">${map.description || ''}</p>
                         </div>
                         <div>
-                            <button class="action-button" onclick="downloadCommunityMap('${map.file}', '${map.name}')">⬇️ Scarica</button>
+                            <button class="action-button" onclick="downloadCommunityMap('${map.file}', '${map.name}')">⬇️ ${t('maps.download')}</button>
                         </div>
                     </div>
                 `).join('');

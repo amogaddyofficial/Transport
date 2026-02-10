@@ -497,12 +497,29 @@
                 </div>
 
                 <h3 style="margin-top: 20px;">🚉 <span data-i18n="game.stations.title">Stazioni e Reti</span></h3>
-                <div
-                    style="padding: 10px; background: rgba(33, 150, 243, 0.3); border-radius: 8px; margin-bottom: 10px; font-size: 0.85em; color: rgba(44, 62, 80, 0.8);">
-                    🧩 <span data-i18n="game.stations.modLoad">Stazioni caricate da mod</span><br>
-                    <small data-i18n="game.stations.modLoadDesc">Le stazioni reali vengono caricate tramite mod (es.
-                        "real_stations")</small>
+                <div id="real-stations-controls" style="display: none;">
+                    <div
+                        style="padding: 10px; background: rgba(33, 150, 243, 0.3); border-radius: 8px; margin-bottom: 10px; font-size: 0.85em; color: rgba(44, 62, 80, 0.8);">
+                        🧩 <span data-i18n="game.stations.modLoad">Stazioni caricate da mod</span><br>
+                        <small data-i18n="game.stations.modLoadDesc">Le stazioni reali vengono caricate tramite mod (es.
+                            "real_stations")</small>
+                    </div>
+
+                    <button class="tool-button" id="load-stations-button" onclick="loadRealStations()">
+                        📥 <span data-i18n="game.stations.reloadStations">Ricarica Stazioni</span>
+                    </button>
+                    <button class="tool-button" id="load-roads-button" onclick="loadRoadsAndTracks()">
+                        🛣️ <span data-i18n="game.stations.reloadRoads">Ricarica Strade e Binari</span>
+                    </button>
+
+                    <div style="margin-top: 10px; display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" id="auto-load-toggle" onchange="toggleAutoLoad(this.checked)" checked>
+                        <label for="auto-load-toggle" style="font-size: 0.85em; cursor: pointer;">
+                            🔄 <span data-i18n="game.stations.autoLoad">Caricamento automatico attivo</span>
+                        </label>
+                    </div>
                 </div>
+
                 <div id="stations-info"
                     style="margin-top: 15px; padding: 10px; background: rgba(255, 255, 255, 0.5); border-radius: 10px; color: #2c3e50; font-size: 0.9em; border: 1px solid rgba(255, 255, 255, 0.7);">
                     <div>🚉 <span data-i18n="game.stations.loaded">Stazioni caricate</span>: <span
@@ -681,6 +698,16 @@
 
         // API per le mod - Permette alle mod di registrare stazioni e binari
         window.MOD_API = {
+            events: {},
+            on: function (event, callback) {
+                if (!this.events[event]) this.events[event] = [];
+                this.events[event].push(callback);
+            },
+            emit: function (event, data) {
+                if (this.events[event]) {
+                    this.events[event].forEach(cb => cb(data));
+                }
+            },
             // Registra una singola stazione
             registerStation: function (stationData) {
                 // stationData: {id, lat, lng, name, type, tags}
@@ -855,8 +882,20 @@
         }
 
         // Carica le mod quando la mappa è pronta
-        map.whenReady(() => {
-            loadMods();
+        map.whenReady(async () => {
+            await loadMods();
+
+            // Verifica se abilitare i controlli OSM
+            const enabledMods = JSON.parse(localStorage.getItem('enabled_mods') || '[]');
+            if (enabledMods.includes('real_stations')) {
+                const controls = document.getElementById('real-stations-controls');
+                if (controls) controls.style.display = 'block';
+            }
+
+            // Notifica alle mod che la mappa è pronta
+            setTimeout(() => {
+                MOD_API.emit('map_ready');
+            }, 100);
         });
 
 
@@ -988,6 +1027,13 @@
 
         // Carica stazioni reali da OpenStreetMap usando Overpass API
         async function loadRealStations(showAlert = true) {
+            // Verifica se la mod 'real_stations' è abilitata
+            const enabledMods = JSON.parse(localStorage.getItem('enabled_mods') || '[]');
+            if (!enabledMods.includes('real_stations')) {
+                console.log('[OSM] Real stations loading is disabled (mod "real_stations" not enabled)');
+                return;
+            }
+
             const bounds = map.getBounds();
             const south = bounds.getSouth();
             const west = bounds.getWest();
@@ -1151,6 +1197,13 @@
 
         // Carica strade e binari da OpenStreetMap
         async function loadRoadsAndTracks(showAlert = true) {
+            // Verifica se la mod 'real_stations' è abilitata
+            const enabledMods = JSON.parse(localStorage.getItem('enabled_mods') || '[]');
+            if (!enabledMods.includes('real_stations')) {
+                console.log('[OSM] Roads and tracks loading is disabled (mod "real_stations" not enabled)');
+                return;
+            }
+
             const bounds = map.getBounds();
             const south = bounds.getSouth();
             const west = bounds.getWest();
@@ -1303,6 +1356,14 @@
             if (autoLoadStationsInterval) {
                 clearInterval(autoLoadStationsInterval);
                 autoLoadStationsInterval = null;
+            }
+        }
+
+        function toggleAutoLoad(enabled) {
+            if (enabled) {
+                startAutoLoadStations();
+            } else {
+                stopAutoLoadStations();
             }
         }
 
