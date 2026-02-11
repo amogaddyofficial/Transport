@@ -6,70 +6,449 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gioco - Trasporti</title>
     <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" :root { --glass-bg: rgba(255, 255,
-        255, 0.85); --glass-border: 1px solid rgba(255, 255, 255, 0.5); --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
-        --primary-color: #2c3e50; --accent-color: #3498db; --success-color: #2ecc71; --danger-color: #e74c3c;
-        --radius-lg: 24px; --radius-md: 16px; --radius-sm: 12px; } * { margin: 0; padding: 0; box-sizing: border-box;
-        -webkit-tap-highlight-color: transparent; } body { font-family: 'Inter' , -apple-system,
-        BlinkMacSystemFont, 'Segoe UI' , Roboto, sans-serif; height: 100vh; width: 100vw; overflow: hidden; background:
-        #f0f2f5; } /* Fullscreen Map */ #map-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-        z-index: 0; } #map { width: 100%; height: 100%; } /* UI Layer - Floating Elements */ .ui-layer { position:
-        absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; /* Let clicks pass through to map */
-        z-index: 10; display: flex; flex-direction: column; justify-content: space-between; padding: 20px; }
-        .pointer-events-auto { pointer-events: auto; } /* Top Bar */ .top-bar { display: flex; justify-content:
-        space-between; align-items: flex-start; } .game-title-card { background: var(--glass-bg); backdrop-filter:
-        blur(12px); -webkit-backdrop-filter: blur(12px); padding: 12px 24px; border-radius: var(--radius-lg); border:
-        var(--glass-border); box-shadow: var(--glass-shadow); display: flex; align-items: center; gap: 15px; }
-        .game-title-card h1 { font-size: 1.4em; font-weight: 700; color: var(--primary-color); margin: 0; } .top-actions
-        { display: flex; gap: 10px; } .icon-btn { width: 44px; height: 44px; border-radius: 50%; background:
-        var(--glass-bg); backdrop-filter: blur(12px); border: var(--glass-border); box-shadow: var(--glass-shadow);
-        display: flex; align-items: center; justify-content: center; font-size: 1.2em; cursor: pointer; transition:
-        transform 0.2s, background 0.2s; color: var(--primary-color); } .icon-btn:hover { transform: scale(1.05);
-        background: #fff; } /* Right Panel (Collapsible) */ .right-panel { position: absolute; top: 80px; right: 20px;
-        width: 300px; max-height: calc(100% - 200px); overflow-y: auto; display: flex; flex-direction: column; gap:
-        15px; } .panel-card { background: var(--glass-bg); backdrop-filter: blur(12px); border-radius: var(--radius-md);
-        border: var(--glass-border); box-shadow: var(--glass-shadow); padding: 16px; transition: opacity 0.3s, transform
-        0.3s; } .panel-card h3 { font-size: 1em; margin-bottom: 12px; color: var(--primary-color); display: flex;
-        align-items: center; gap: 8px; } /* Bottom Dock */ .bottom-dock-container { display: flex; flex-direction:
-        column; align-items: center; gap: 15px; margin-bottom: 10px; } .active-tool-panel { background: var(--glass-bg);
-        backdrop-filter: blur(12px); border-radius: var(--radius-lg); border: var(--glass-border); box-shadow:
-        var(--glass-shadow); padding: 16px; width: 100%; max-width: 600px; display: none; /* Hidden by default */
-        animation: slideUp 0.3s ease-out; } .active-tool-panel.visible { display: block; } @keyframes slideUp { from {
-        transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } } .bottom-dock {
-        background: var(--glass-bg); backdrop-filter: blur(12px); border-radius: var(--radius-lg); border:
-        var(--glass-border); box-shadow: var(--glass-shadow); padding: 10px 20px; display: flex; gap: 15px; } .dock-item
-        { display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; padding: 8px 12px;
-        border-radius: var(--radius-sm); transition: background 0.2s; position: relative; } .dock-item:hover {
-        background: rgba(255, 255, 255, 0.5); } .dock-item.active { background: white; color: var(--accent-color); }
-        .dock-item.active::after { content: '' ; position: absolute; bottom: -5px; left: 50%; transform:
-        translateX(-50%); width: 4px; height: 4px; background: var(--accent-color); border-radius: 50%; } .dock-icon {
-        font-size: 1.5em; } .dock-label { font-size: 0.75em; font-weight: 600; color: var(--primary-color); } /* Common
-        Elements */ .btn-primary { background: var(--accent-color); color: white; border: none; padding: 10px 20px;
-        border-radius: var(--radius-sm); font-weight: 600; cursor: pointer; transition: filter 0.2s; }
-        .btn-primary:hover { filter: brightness(1.1); } .tool-grid { display: grid; grid-template-columns:
-        repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; } .tool-card { background: rgba(255, 255, 255, 0.5); border:
-        1px solid rgba(0, 0, 0, 0.05); border-radius: var(--radius-sm); padding: 12px; text-align: center; cursor:
-        pointer; transition: all 0.2s; } .tool-card:hover { background: white; transform: translateY(-2px); box-shadow:
-        0 4px 12px rgba(0, 0, 0, 0.05); } .tool-card.active { background: white; border-color: var(--accent-color);
-        box-shadow: 0 0 0 2px var(--accent-color); } select { width: 100%; padding: 10px; border-radius:
-        var(--radius-sm); border: 1px solid rgba(0,0,0,0.1); background: white; margin-bottom: 10px; } /* Map controls
-        overrides */ .leaflet-top { top: 100px; /* Push zoom controls down */ } /* Station Markers & Filters */
-        .station-marker { background: white; border: 3px solid; border-radius: 50%; width: 24px; height: 24px; display:
-        flex; align-items: center; justify-content: center; font-size: 14px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        transition: transform 0.2s; } .station-marker:hover { transform: scale(1.2); } .station-train { border-color:
-        #4ECDC4; color: #4ECDC4; } .station-bus { border-color: #FF9800; color: #FF9800; } .station-tram { border-color:
-        #9C27B0; color: #9C27B0; } .filter-pill { display: flex; align-items: center; gap: 8px; background: white;
-        padding: 6px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 600; color: #666; cursor: pointer;
-        border: 1px solid #eee; } .filter-pill.active { background: var(--primary-color); color: white; border-color:
-        var(--primary-color); } /* Time Controls */ .time-control-group { display: flex; background:
-        rgba(255,255,255,0.5); border-radius: var(--radius-md); padding: 4px; gap: 2px; } .time-btn { padding: 8px 12px;
-        border-radius: var(--radius-sm); border: none; background: transparent; cursor: pointer; font-weight: 600;
-        font-size: 0.9em; color: #666; } .time-btn.active { background: white; color: var(--primary-color); box-shadow:
-        0 2px 4px rgba(0,0,0,0.1); } /* Animations */ @keyframes pulse { 0% { transform: scale(1); } 50% { transform:
-        scale(1.1); } 100% { transform: scale(1); } } /* Loading Overlay */ .load-overlay { position: fixed; top: 0;
-        left: 0; width: 100%; height: 100%; background: rgba(240, 242, 245, 0.9); backdrop-filter: blur(5px); display:
-        flex; justify-content: center; align-items: center; z-index: 9999; flex-direction: column; }
-        .load-overlay.hidden { display: none; } </style>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <style>
+        :root {
+            --glass-bg: rgba(255, 255, 255, 0.85);
+            --glass-border: 1px solid rgba(255, 255, 255, 0.5);
+            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
+            --primary-color: #2c3e50;
+            --accent-color: #3498db;
+            --success-color: #2ecc71;
+            --danger-color: #e74c3c;
+            --radius-lg: 24px;
+            --radius-md: 16px;
+            --radius-sm: 12px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            background: #f0f2f5;
+        }
+
+        /* Fullscreen Map */
+        #map-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* UI Layer - Floating Elements */
+        .ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            /* Let clicks pass through to map */
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+        }
+
+        .pointer-events-auto {
+            pointer-events: auto;
+        }
+
+        /* Top Bar */
+        .top-bar {
+            display: flex;
+            justify-content:
+                space-between;
+            align-items: flex-start;
+        }
+
+        .game-title-card {
+            background: var(--glass-bg);
+            backdrop-filter:
+                blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            padding: 12px 24px;
+            border-radius: var(--radius-lg);
+            border:
+                var(--glass-border);
+            box-shadow: var(--glass-shadow);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .game-title-card h1 {
+            font-size: 1.4em;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin: 0;
+        }
+
+        .top-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .icon-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background:
+                var(--glass-bg);
+            backdrop-filter: blur(12px);
+            border: var(--glass-border);
+            box-shadow: var(--glass-shadow);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2em;
+            cursor: pointer;
+            transition:
+                transform 0.2s, background 0.2s;
+            color: var(--primary-color);
+        }
+
+        .icon-btn:hover {
+            transform: scale(1.05);
+            background: #fff;
+        }
+
+        /* Right Panel (Collapsible) */
+        .right-panel {
+            position: absolute;
+            top: 80px;
+            right: 20px;
+            width: 300px;
+            max-height: calc(100% - 200px);
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap:
+                15px;
+        }
+
+        .panel-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            border-radius: var(--radius-md);
+            border: var(--glass-border);
+            box-shadow: var(--glass-shadow);
+            padding: 16px;
+            transition: opacity 0.3s, transform 0.3s;
+        }
+
+        .panel-card h3 {
+            font-size: 1em;
+            margin-bottom: 12px;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Bottom Dock */
+        .bottom-dock-container {
+            display: flex;
+            flex-direction:
+                column;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 10px;
+        }
+
+        .active-tool-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            border-radius: var(--radius-lg);
+            border: var(--glass-border);
+            box-shadow:
+                var(--glass-shadow);
+            padding: 16px;
+            width: 100%;
+            max-width: 600px;
+            display: none;
+            /* Hidden by default */
+            animation: slideUp 0.3s ease-out;
+        }
+
+        .active-tool-panel.visible {
+            display: block;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .bottom-dock {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            border-radius: var(--radius-lg);
+            border:
+                var(--glass-border);
+            box-shadow: var(--glass-shadow);
+            padding: 10px 20px;
+            display: flex;
+            gap: 15px;
+        }
+
+        .dock-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+            padding: 8px 12px;
+            border-radius: var(--radius-sm);
+            transition: background 0.2s;
+            position: relative;
+        }
+
+        .dock-item:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        .dock-item.active {
+            background: white;
+            color: var(--accent-color);
+        }
+
+        .dock-item.active::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 50%;
+            transform:
+                translateX(-50%);
+            width: 4px;
+            height: 4px;
+            background: var(--accent-color);
+            border-radius: 50%;
+        }
+
+        .dock-icon {
+            font-size: 1.5em;
+        }
+
+        .dock-label {
+            font-size: 0.75em;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        /* Common
+        Elements */
+        .btn-primary {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: var(--radius-sm);
+            font-weight: 600;
+            cursor: pointer;
+            transition: filter 0.2s;
+        }
+
+        .btn-primary:hover {
+            filter: brightness(1.1);
+        }
+
+        .tool-grid {
+            display: grid;
+            grid-template-columns:
+                repeat(auto-fill, minmax(120px, 1fr));
+            gap: 10px;
+        }
+
+        .tool-card {
+            background: rgba(255, 255, 255, 0.5);
+            border:
+                1px solid rgba(0, 0, 0, 0.05);
+            border-radius: var(--radius-sm);
+            padding: 12px;
+            text-align: center;
+            cursor:
+                pointer;
+            transition: all 0.2s;
+        }
+
+        .tool-card:hover {
+            background: white;
+            transform: translateY(-2px);
+            box-shadow:
+                0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        .tool-card.active {
+            background: white;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 2px var(--accent-color);
+        }
+
+        select {
+            width: 100%;
+            padding: 10px;
+            border-radius:
+                var(--radius-sm);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            background: white;
+            margin-bottom: 10px;
+        }
+
+        /* Map controls
+        overrides */
+        .leaflet-top {
+            top: 100px;
+            /* Push zoom controls down */
+        }
+
+        /* Station Markers & Filters */
+        .station-marker {
+            background: white;
+            border: 3px solid;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display:
+                flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s;
+        }
+
+        .station-marker:hover {
+            transform: scale(1.2);
+        }
+
+        .station-train {
+            border-color:
+                #4ECDC4;
+            color: #4ECDC4;
+        }
+
+        .station-bus {
+            border-color: #FF9800;
+            color: #FF9800;
+        }
+
+        .station-tram {
+            border-color:
+                #9C27B0;
+            color: #9C27B0;
+        }
+
+        .filter-pill {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+            color: #666;
+            cursor: pointer;
+            border: 1px solid #eee;
+        }
+
+        .filter-pill.active {
+            background: var(--primary-color);
+            color: white;
+            border-color:
+                var(--primary-color);
+        }
+
+        /* Time Controls */
+        .time-control-group {
+            display: flex;
+            background:
+                rgba(255, 255, 255, 0.5);
+            border-radius: var(--radius-md);
+            padding: 4px;
+            gap: 2px;
+        }
+
+        .time-btn {
+            padding: 8px 12px;
+            border-radius: var(--radius-sm);
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .time-btn.active {
+            background: white;
+            color: var(--primary-color);
+            box-shadow:
+                0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Animations */
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform:
+                    scale(1.1);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        /* Loading Overlay */
+        .load-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(240, 242, 245, 0.9);
+            backdrop-filter: blur(5px);
+            display:
+                flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            flex-direction: column;
+        }
+
+        .load-overlay.hidden {
+            display: none;
+        }
+    </style>
 </head>
 
 <body>
@@ -308,7 +687,7 @@
     <!-- Initial Loading Overlay -->
     <div id="loadOverlay" class="load-overlay hidden">
         <div class="load-card">
-            <h2>🚇 Trasporti v3.3</h2>
+            <h2>🚇 Trasporti v3.4</h2>
             <p>Caricamento mappe e salvataggi...</p>
             <div id="save-list-container" style="max-height: 300px; overflow-y: auto;"></div>
             <button class="load-button"
