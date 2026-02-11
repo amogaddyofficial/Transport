@@ -7,7 +7,7 @@ def create_offline_version():
     source_dir = os.getcwd()
     
     # Version Configuration
-    CURRENT_VERSION = "3.3"
+    CURRENT_VERSION = "3.4"
     output_zip = f"downloads/Transport_v{CURRENT_VERSION}.zip"
     beta_archive = "downloads/beta.zip"
     

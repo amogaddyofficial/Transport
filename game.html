@@ -6,642 +6,335 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gioco - Trasporti</title>
     <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            min-height: 100vh;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 50%, #e8ecf1 100%);
-            background-size: 400% 400%;
-            animation: gradientShift 15s ease infinite;
-            padding: 20px;
-            overflow-x: auto;
-        }
-
-        @keyframes gradientShift {
-            0% {
-                background-position: 0% 50%;
-            }
-
-            50% {
-                background-position: 100% 50%;
-            }
-
-            100% {
-                background-position: 0% 50%;
-            }
-        }
-
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .glass-card {
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(40px);
-            -webkit-backdrop-filter: blur(40px);
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.8);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.9);
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-
-        h1 {
-            font-size: 2.5em;
-            font-weight: 700;
-            letter-spacing: 2px;
-            color: #2c3e50;
-        }
-
-        h1 span {
-            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .back-button {
-            padding: 12px 25px;
-            background: rgba(255, 255, 255, 0.6);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.8);
-            border-radius: 15px;
-            color: #2c3e50;
-            text-decoration: none;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9);
-            cursor: pointer;
-        }
-
-        .back-button:hover {
-            background: rgba(255, 255, 255, 0.85);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 1);
-        }
-
-        .editor-container {
-            display: flex;
-            gap: 20px;
-            flex-wrap: wrap;
-        }
-
-        .tools-panel {
-            flex: 0 0 250px;
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(40px);
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.8);
-            padding: 20px;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.9);
-        }
-
-        .tools-panel-right {
-            flex: 0 0 250px;
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(40px);
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.8);
-            padding: 20px;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.9);
-        }
-
-        .tools-panel h3 {
-            color: #2c3e50;
-            margin-bottom: 15px;
-            font-size: 1.2em;
-        }
-
-        .tool-button {
-            width: 100%;
-            padding: 12px;
-            margin-bottom: 10px;
-            background: rgba(255, 255, 255, 0.6);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.8);
-            border-radius: 10px;
-            color: #2c3e50;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9);
-        }
-
-        .tool-button:hover {
-            background: rgba(255, 255, 255, 0.85);
-            transform: translateX(5px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 1);
-        }
-
-        .tool-button.active {
-            background: rgba(255, 255, 255, 0.9);
-            border-color: rgba(255, 255, 255, 1);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 1);
-        }
-
-        .map-container {
-            flex: 1;
-            min-width: 600px;
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(40px);
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.8);
-            padding: 20px;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.9);
-            overflow: hidden;
-            position: relative;
-        }
-
-        #map {
-            width: 100%;
-            height: 600px;
-            border-radius: 10px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-        }
-
-        /* Pannello filtri stazioni */
-        .station-filter-panel {
-            position: absolute;
-            bottom: 30px;
-            right: 30px;
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(40px);
-            -webkit-backdrop-filter: blur(40px);
-            border-radius: 15px;
-            border: 1px solid rgba(255, 255, 255, 0.9);
-            padding: 15px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.9);
-            z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .station-filter-panel h4 {
-            color: #2c3e50;
-            font-size: 0.9em;
-            margin-bottom: 8px;
-            text-align: center;
-            font-weight: 600;
-        }
-
-        .filter-icon {
-            width: 50px;
-            height: 50px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            border: 2px solid rgba(255, 255, 255, 0.8);
-            background: rgba(255, 255, 255, 0.6);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        .filter-icon:hover {
-            transform: scale(1.1);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-        }
-
-        .filter-icon.active {
-            background: rgba(76, 175, 80, 0.3);
-            border-color: rgba(76, 175, 80, 0.8);
-            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
-        }
-
-        .filter-icon.inactive {
-            opacity: 0.4;
-            background: rgba(244, 67, 54, 0.2);
-            border-color: rgba(244, 67, 54, 0.5);
-        }
-
-        .filter-icon.train {
-            background: rgba(78, 205, 196, 0.6);
-        }
-
-        .filter-icon.bus {
-            background: rgba(255, 152, 0, 0.6);
-        }
-
-        .filter-icon.tram {
-            background: rgba(156, 39, 176, 0.6);
-        }
-
-        .info-panel {
-            margin-top: 20px;
-            color: #2c3e50;
-            font-size: 0.9em;
-        }
-
-        .info-panel div {
-            margin-bottom: 5px;
-        }
-
-        .load-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.3);
-            backdrop-filter: blur(10px);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 10000;
-        }
-
-        .load-card {
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(40px);
-            -webkit-backdrop-filter: blur(40px);
-            border-radius: 30px;
-            border: 1px solid rgba(255, 255, 255, 0.9);
-            padding: 40px 50px;
-            text-align: center;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 1);
-        }
-
-        .load-card h2 {
-            color: #2c3e50;
-            font-size: 2em;
-            margin-bottom: 20px;
-        }
-
-        .load-card p {
-            color: rgba(44, 62, 80, 0.8);
-            font-size: 1.1em;
-            margin-bottom: 30px;
-        }
-
-        .load-button {
-            padding: 15px 40px;
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.9);
-            border-radius: 15px;
-            color: #2c3e50;
-            font-size: 1.2em;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 1);
-            margin: 5px;
-        }
-
-        .load-button:hover {
-            background: rgba(255, 255, 255, 0.95);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 25px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 1);
-        }
-
-        .load-overlay.hidden {
-            display: none;
-        }
-
-        /* Stili per i marker delle stazioni */
-        .station-marker {
-            background: rgba(255, 107, 107, 0.8);
-            border: 3px solid #fff;
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-        }
-
-        /* Stazioni treni/metro */
-        .station-marker.station-train {
-            background: rgba(78, 205, 196, 0.8);
-            border-color: #4ECDC4;
-        }
-
-        /* Stazioni bus */
-        .station-marker.station-bus {
-            background: rgba(255, 152, 0, 0.8);
-            border-color: #FF9800;
-        }
-
-        /* Stazioni tram */
-        .station-marker.station-tram {
-            background: rgba(156, 39, 176, 0.8);
-            border-color: #9C27B0;
-        }
-
-        /* Stili per i marker dei treni */
-        .train-marker {
-            background: rgba(255, 193, 7, 0.9);
-            border: 3px solid #fff;
-            border-radius: 50%;
-            width: 32px;
-            height: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.4), 0 0 0 2px rgba(255, 193, 7, 0.3);
-            animation: trainPulse 2s ease-in-out infinite;
-            cursor: pointer;
-        }
-
-        @keyframes trainPulse {
-
-            0%,
-            100% {
-                transform: scale(1);
-                box-shadow: 0 3px 12px rgba(0, 0, 0, 0.4), 0 0 0 2px rgba(255, 193, 7, 0.3);
-            }
-
-            50% {
-                transform: scale(1.1);
-                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), 0 0 0 4px rgba(255, 193, 7, 0.5);
-            }
-        }
-
-        .train-marker:hover {
-            transform: scale(1.15);
-            z-index: 1000;
-        }
-
-        /* Stili per i controlli del tempo */
-        .time-controls {
-            margin-top: 20px;
-            padding: 15px;
-            background: rgba(255, 255, 255, 0.5);
-            border-radius: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.7);
-        }
-
-        .time-controls h4 {
-            color: #2c3e50;
-            margin-bottom: 10px;
-            font-size: 1em;
-        }
-
-        .time-buttons {
-            display: flex;
-            gap: 5px;
-            flex-wrap: wrap;
-        }
-
-        .time-button {
-            flex: 1;
-            min-width: 60px;
-            padding: 8px;
-            background: rgba(255, 255, 255, 0.6);
-            border: 1px solid rgba(255, 255, 255, 0.8);
-            border-radius: 8px;
-            color: #2c3e50;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .time-button:hover {
-            background: rgba(255, 255, 255, 0.85);
-        }
-
-        .time-button.active {
-            background: rgba(76, 175, 80, 0.6);
-            color: #fff;
-        }
-    </style>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" :root { --glass-bg: rgba(255, 255,
+        255, 0.85); --glass-border: 1px solid rgba(255, 255, 255, 0.5); --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
+        --primary-color: #2c3e50; --accent-color: #3498db; --success-color: #2ecc71; --danger-color: #e74c3c;
+        --radius-lg: 24px; --radius-md: 16px; --radius-sm: 12px; } * { margin: 0; padding: 0; box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent; } body { font-family: 'Inter' , -apple-system,
+        BlinkMacSystemFont, 'Segoe UI' , Roboto, sans-serif; height: 100vh; width: 100vw; overflow: hidden; background:
+        #f0f2f5; } /* Fullscreen Map */ #map-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        z-index: 0; } #map { width: 100%; height: 100%; } /* UI Layer - Floating Elements */ .ui-layer { position:
+        absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; /* Let clicks pass through to map */
+        z-index: 10; display: flex; flex-direction: column; justify-content: space-between; padding: 20px; }
+        .pointer-events-auto { pointer-events: auto; } /* Top Bar */ .top-bar { display: flex; justify-content:
+        space-between; align-items: flex-start; } .game-title-card { background: var(--glass-bg); backdrop-filter:
+        blur(12px); -webkit-backdrop-filter: blur(12px); padding: 12px 24px; border-radius: var(--radius-lg); border:
+        var(--glass-border); box-shadow: var(--glass-shadow); display: flex; align-items: center; gap: 15px; }
+        .game-title-card h1 { font-size: 1.4em; font-weight: 700; color: var(--primary-color); margin: 0; } .top-actions
+        { display: flex; gap: 10px; } .icon-btn { width: 44px; height: 44px; border-radius: 50%; background:
+        var(--glass-bg); backdrop-filter: blur(12px); border: var(--glass-border); box-shadow: var(--glass-shadow);
+        display: flex; align-items: center; justify-content: center; font-size: 1.2em; cursor: pointer; transition:
+        transform 0.2s, background 0.2s; color: var(--primary-color); } .icon-btn:hover { transform: scale(1.05);
+        background: #fff; } /* Right Panel (Collapsible) */ .right-panel { position: absolute; top: 80px; right: 20px;
+        width: 300px; max-height: calc(100% - 200px); overflow-y: auto; display: flex; flex-direction: column; gap:
+        15px; } .panel-card { background: var(--glass-bg); backdrop-filter: blur(12px); border-radius: var(--radius-md);
+        border: var(--glass-border); box-shadow: var(--glass-shadow); padding: 16px; transition: opacity 0.3s, transform
+        0.3s; } .panel-card h3 { font-size: 1em; margin-bottom: 12px; color: var(--primary-color); display: flex;
+        align-items: center; gap: 8px; } /* Bottom Dock */ .bottom-dock-container { display: flex; flex-direction:
+        column; align-items: center; gap: 15px; margin-bottom: 10px; } .active-tool-panel { background: var(--glass-bg);
+        backdrop-filter: blur(12px); border-radius: var(--radius-lg); border: var(--glass-border); box-shadow:
+        var(--glass-shadow); padding: 16px; width: 100%; max-width: 600px; display: none; /* Hidden by default */
+        animation: slideUp 0.3s ease-out; } .active-tool-panel.visible { display: block; } @keyframes slideUp { from {
+        transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } } .bottom-dock {
+        background: var(--glass-bg); backdrop-filter: blur(12px); border-radius: var(--radius-lg); border:
+        var(--glass-border); box-shadow: var(--glass-shadow); padding: 10px 20px; display: flex; gap: 15px; } .dock-item
+        { display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; padding: 8px 12px;
+        border-radius: var(--radius-sm); transition: background 0.2s; position: relative; } .dock-item:hover {
+        background: rgba(255, 255, 255, 0.5); } .dock-item.active { background: white; color: var(--accent-color); }
+        .dock-item.active::after { content: '' ; position: absolute; bottom: -5px; left: 50%; transform:
+        translateX(-50%); width: 4px; height: 4px; background: var(--accent-color); border-radius: 50%; } .dock-icon {
+        font-size: 1.5em; } .dock-label { font-size: 0.75em; font-weight: 600; color: var(--primary-color); } /* Common
+        Elements */ .btn-primary { background: var(--accent-color); color: white; border: none; padding: 10px 20px;
+        border-radius: var(--radius-sm); font-weight: 600; cursor: pointer; transition: filter 0.2s; }
+        .btn-primary:hover { filter: brightness(1.1); } .tool-grid { display: grid; grid-template-columns:
+        repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; } .tool-card { background: rgba(255, 255, 255, 0.5); border:
+        1px solid rgba(0, 0, 0, 0.05); border-radius: var(--radius-sm); padding: 12px; text-align: center; cursor:
+        pointer; transition: all 0.2s; } .tool-card:hover { background: white; transform: translateY(-2px); box-shadow:
+        0 4px 12px rgba(0, 0, 0, 0.05); } .tool-card.active { background: white; border-color: var(--accent-color);
+        box-shadow: 0 0 0 2px var(--accent-color); } select { width: 100%; padding: 10px; border-radius:
+        var(--radius-sm); border: 1px solid rgba(0,0,0,0.1); background: white; margin-bottom: 10px; } /* Map controls
+        overrides */ .leaflet-top { top: 100px; /* Push zoom controls down */ } /* Station Markers & Filters */
+        .station-marker { background: white; border: 3px solid; border-radius: 50%; width: 24px; height: 24px; display:
+        flex; align-items: center; justify-content: center; font-size: 14px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        transition: transform 0.2s; } .station-marker:hover { transform: scale(1.2); } .station-train { border-color:
+        #4ECDC4; color: #4ECDC4; } .station-bus { border-color: #FF9800; color: #FF9800; } .station-tram { border-color:
+        #9C27B0; color: #9C27B0; } .filter-pill { display: flex; align-items: center; gap: 8px; background: white;
+        padding: 6px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 600; color: #666; cursor: pointer;
+        border: 1px solid #eee; } .filter-pill.active { background: var(--primary-color); color: white; border-color:
+        var(--primary-color); } /* Time Controls */ .time-control-group { display: flex; background:
+        rgba(255,255,255,0.5); border-radius: var(--radius-md); padding: 4px; gap: 2px; } .time-btn { padding: 8px 12px;
+        border-radius: var(--radius-sm); border: none; background: transparent; cursor: pointer; font-weight: 600;
+        font-size: 0.9em; color: #666; } .time-btn.active { background: white; color: var(--primary-color); box-shadow:
+        0 2px 4px rgba(0,0,0,0.1); } /* Animations */ @keyframes pulse { 0% { transform: scale(1); } 50% { transform:
+        scale(1.1); } 100% { transform: scale(1); } } /* Loading Overlay */ .load-overlay { position: fixed; top: 0;
+        left: 0; width: 100%; height: 100%; background: rgba(240, 242, 245, 0.9); backdrop-filter: blur(5px); display:
+        flex; justify-content: center; align-items: center; z-index: 9999; flex-direction: column; }
+        .load-overlay.hidden { display: none; } </style>
 </head>
 
 <body>
-    <div class="container">
-        <div class="header glass-card">
-            <h1>🚇 <span data-i18n="index.title">TRASPORTI</span></h1>
-            <div style="display: flex; gap: 10px; align-items: center;">
-                <button class="back-button" onclick="saveGameplay()" style="background: rgba(76, 175, 80, 0.6);">
-                    💾 <span data-i18n="game.save">Salva</span>
-                </button>
-                <button class="back-button" onclick="exportCurrentMap()"
-                    style="background: rgba(33, 150, 243, 0.6); margin-left: 5px;">
-                    🗺️ Esporta .tranmap
-                </button>
-                <a href="index.html" class="back-button">⬅️ <span data-i18n="game.back">Menu</span></a>
+    <!-- Fullscreen Map Background -->
+    <div id="map-container">
+        <div id="map"></div>
+    </div>
+
+    <!-- UI Layer -->
+    <div class="ui-layer">
+
+        <!-- Top Navigation Bar -->
+        <div class="top-bar pointer-events-auto">
+            <div class="game-title-card">
+                <a href="index.html" style="text-decoration:none; color:inherit; font-size: 1.2em;">⬅️</a>
+                <h1>🚇 <span data-i18n="index.title">TRASPORTI</span></h1>
+            </div>
+            <div class="top-actions">
+                <button class="icon-btn" onclick="saveGameplay()" title="Salva">💾</button>
+                <button class="icon-btn" onclick="exportCurrentMap()" title="Esporta">🗺️</button>
             </div>
         </div>
 
-        <div class="editor-container">
-            <!-- Pannello sinistra -->
-            <div class="tools-panel">
-                <h3>🛤️ <span data-i18n="game.tracks.title">Costruzione Binari</span></h3>
-                <div style="margin-bottom: 10px;">
-                    <select id="track-type-select"
-                        style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.8); background: rgba(255, 255, 255, 0.6); color: #2c3e50; font-weight: 600;">
-                        <option value="metro">🚇 Metro</option>
+        <!-- Right Floating Panel (Status & Info) -->
+        <div class="right-panel pointer-events-auto">
+
+            <!-- Time Controls -->
+            <div class="panel-card">
+                <h3>⏱️ <span data-i18n="game.time.title">Tempo</span></h3>
+                <div class="time-control-group">
+                    <button class="time-btn" id="time-pause" onclick="setSimulationSpeed(0)">⏸️</button>
+                    <button class="time-btn" id="time-0.5x" onclick="setSimulationSpeed(0.5)">0.5x</button>
+                    <button class="time-btn active" id="time-1x" onclick="setSimulationSpeed(1)">1x</button>
+                    <button class="time-btn" id="time-2x" onclick="setSimulationSpeed(2)">2x</button>
+                    <button class="time-btn" id="time-4x" onclick="setSimulationSpeed(4)">4x</button>
+                </div>
+                <div style="margin-top: 8px; font-size: 0.9em; color: #666; text-align: center;">
+                    <span id="simulation-time" style="font-family: monospace; font-size: 1.2em;">00:00:00</span>
+                </div>
+            </div>
+
+            <!-- Vehicles Status -->
+            <div class="panel-card">
+                <h3>🚗 <span data-i18n="game.vehicles.title">Veicoli</span></h3>
+                <div id="vehicles-info" style="font-size: 0.9em; color: #666; margin-bottom: 10px;">
+                    <div style="margin-bottom: 5px;">Totale: <strong id="vehicles-count">0</strong></div>
+                    <div style="display:flex; justify-content: space-between; gap:5px; font-size: 0.85em;">
+                        <span>🚌 <span id="buses-count">0</span></span>
+                        <span>🚊 <span id="trams-count">0</span></span>
+                        <span>🚇 <span id="metros-count">0</span></span>
+                        <span>🚂 <span id="trains-count">0</span></span>
+                    </div>
+                </div>
+
+                <!-- Compact Vehicle Controls -->
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <select id="vehicle-type-select" style="margin-bottom: 0;">
+                        <option value="bus">🚌 Bus</option>
                         <option value="tram">🚊 Tram</option>
+                        <option value="metro">🚇 Metro</option>
                         <option value="train">🚂 Treno</option>
                     </select>
+                    <button class="btn-primary" id="add-vehicle-button" onclick="addVehicle()">➕ Aggiungi</button>
+                    <div style="display:flex; gap:5px;">
+                        <button class="btn-primary" style="flex:1; background:var(--success-color); padding: 8px;"
+                            id="start-vehicles-button" onclick="startVehicles()" title="Avvia Tutto">▶️</button>
+                        <button class="btn-primary" style="flex:1; background:var(--danger-color); padding: 8px;"
+                            id="stop-vehicles-button" onclick="stopVehicles()" title="Ferma Tutto">⏹️</button>
+                        <button class="btn-primary" style="flex:1; background:var(--danger-color); padding: 8px;"
+                            id="delete-vehicle-button" onclick="deleteVehicle()" title="Elimina">🗑️</button>
+                    </div>
                 </div>
-                <button class="tool-button" id="create-track-button" onclick="startCreatingTrack()"
-                    style="background: rgba(156, 39, 176, 0.6);">
-                    ➕ <span data-i18n="game.tracks.create">Crea Binari</span>
-                </button>
-                <div id="track-creation-controls" style="display: none; margin-top: 10px;">
-                    <button class="tool-button" id="finish-track-button" onclick="finishCreatingTrack()"
-                        style="background: rgba(76, 175, 80, 0.6);">
-                        ✅ <span data-i18n="game.tracks.finish">Termina Binario</span>
-                    </button>
-                    <button class="tool-button" id="cancel-track-button" onclick="cancelCreatingTrack()"
-                        style="background: rgba(244, 67, 54, 0.6);">
-                        ❌ <span data-i18n="common.cancel">Annulla</span>
-                    </button>
+            </div>
+
+            <!-- Filters -->
+            <div class="panel-card">
+                <h3>🔍 Filtri</h3>
+                <div style="display:flex; gap:5px; flex-wrap:wrap;">
+                    <div class="filter-pill active" id="filter-train" onclick="toggleStationFilter('train')">🚉 Treno
+                    </div>
+                    <div class="filter-pill active" id="filter-bus" onclick="toggleStationFilter('bus')">🚌 Bus</div>
+                    <div class="filter-pill active" id="filter-tram" onclick="toggleStationFilter('tram')">🚊 Tram</div>
                 </div>
-                <div id="track-creation-info"
-                    style="display: none; margin-top: 15px; padding: 10px; background: rgba(255, 255, 255, 0.5); border-radius: 10px; color: #2c3e50; font-size: 0.9em; border: 1px solid rgba(255, 255, 255, 0.7);">
-                    <div id="track-creation-status" data-i18n="game.tracks.clickToAdd">👆 Clicca sulla mappa per
-                        aggiungere punti al binario</div>
+            </div>
+
+            <!-- Debug/Info -->
+            <div class="panel-card">
+                <div style="font-size: 0.8em; color: #666;">
+                    Posizione: <span id="mousePos">-</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Dock Area -->
+        <div class="bottom-dock-container pointer-events-auto">
+
+            <!-- --- TOOL PANELS (Toggled visibility) --- -->
+
+            <!-- Tracks & Stations Panel -->
+            <div id="panel-build" class="active-tool-panel">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <h3>🛠️ Costruzione</h3>
+                    <button onclick="toggleDockPanel(null)"
+                        style="background:none; border:none; cursor:pointer;">❌</button>
                 </div>
 
-                <h3 style="margin-top: 20px;">🚉 <span data-i18n="game.customStations.title">Stazioni
-                        Personalizzate</span></h3>
-                <div style="margin-bottom: 10px;">
-                    <select id="custom-station-type-select"
-                        style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.8); background: rgba(255, 255, 255, 0.6); color: #2c3e50; font-weight: 600;">
-                        <option value="metro">🚇 Metro</option>
-                        <option value="tram">🚊 Tram</option>
-                        <option value="train">🚂 Treno</option>
-                    </select>
-                </div>
-                <button class="tool-button" id="add-custom-station-button" onclick="startAddingCustomStation()"
-                    style="background: rgba(33, 150, 243, 0.6);">
-                    ➕ <span data-i18n="game.customStations.add">Aggiungi Stazione</span>
-                </button>
-                <div id="custom-station-info"
-                    style="display: none; margin-top: 15px; padding: 10px; background: rgba(255, 255, 255, 0.5); border-radius: 10px; color: #2c3e50; font-size: 0.9em; border: 1px solid rgba(255, 255, 255, 0.7);">
-                    <div id="custom-station-status" data-i18n="game.customStations.clickToPlace">👆 Clicca sulla mappa
-                        per posizionare la stazione</div>
-                </div>
+                <!-- Tab-like organization for Tracks vs Custom Stations -->
+                <div style="display:flex; flex-direction:column; gap:15px;">
 
-                <h3 style="margin-top: 20px;">🚉 <span data-i18n="game.stations.title">Stazioni e Reti</span></h3>
-                <!-- Real Stations Controls removed (now handled by mod) -->
+                    <!-- Tracks Section -->
+                    <div style="background: rgba(255,255,255,0.5); padding:10px; border-radius:10px;">
+                        <h4 style="margin-bottom:5px; font-size:0.9em; color:#666;">🛤️ Binari</h4>
+                        <select id="track-type-select">
+                            <option value="metro">🚇 Metro</option>
+                            <option value="tram">🚊 Tram</option>
+                            <option value="train">🚂 Treno</option>
+                        </select>
+                        <div style="display:flex; gap:10px;">
+                            <button class="btn-primary" style="flex:1;" id="create-track-button"
+                                onclick="startCreatingTrack()">➕ Crea Binario</button>
+                            <!-- In-progress controls -->
+                            <button class="btn-primary" style="flex:1; background:var(--success-color); display:none;"
+                                id="finish-track-button" onclick="finishCreatingTrack()">✅ Finito</button>
+                            <button class="btn-primary" style="flex:1; background:var(--danger-color); display:none;"
+                                id="cancel-track-button" onclick="cancelCreatingTrack()">❌ Annulla</button>
+                        </div>
+                        <div id="track-creation-info"
+                            style="display:none; margin-top:5px; font-size:0.85em; color:#666;">
+                            <div id="track-creation-status"></div>
+                        </div>
+                    </div>
 
-                <div id="stations-info"
-                    style="margin-top: 15px; padding: 10px; background: rgba(255, 255, 255, 0.5); border-radius: 10px; color: #2c3e50; font-size: 0.9em; border: 1px solid rgba(255, 255, 255, 0.7);">
-                    <div>🚉 <span data-i18n="game.stations.loaded">Stazioni caricate</span>: <span
-                            id="stations-count">0</span></div>
-                    <div id="stations-breakdown"
-                        style="margin-top: 5px; font-size: 0.85em; color: rgba(44, 62, 80, 0.7);">
-                        <div>🚉 <span data-i18n="game.stations.train">Treno/Metro</span>: <span
-                                id="stations-train">0</span></div>
-                        <div>🚌 <span data-i18n="game.stations.bus">Bus</span>: <span id="stations-bus">0</span></div>
-                        <div>🚊 <span data-i18n="game.stations.tram">Tram</span>: <span id="stations-tram">0</span>
+                    <!-- Custom Stations Section -->
+                    <div style="background: rgba(255,255,255,0.5); padding:10px; border-radius:10px;">
+                        <h4 style="margin-bottom:5px; font-size:0.9em; color:#666;">🚉 Stazioni Custom</h4>
+                        <select id="custom-station-type-select">
+                            <option value="metro">🚇 Metro</option>
+                            <option value="tram">🚊 Tram</option>
+                            <option value="train">🚂 Treno</option>
+                        </select>
+                        <button class="btn-primary" style="width:100%;" id="add-custom-station-button"
+                            onclick="startAddingCustomStation()">➕ Aggiungi Stazione</button>
+                        <div id="custom-station-info" style="display:none; margin-top:5px; font-size:0.85em;">
+                            <div id="custom-station-status"></div>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <h3 style="margin-top: 20px;">🚇 <span data-i18n="game.lines.title">Linee Trasporto</span></h3>
-                <div style="margin-bottom: 10px;">
-                    <select id="line-type-select"
-                        style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.8); background: rgba(255, 255, 255, 0.6); color: #2c3e50; font-weight: 600;">
-                        <option value="metro">🚇 Metro</option>
-                        <option value="bus">🚌 Bus</option>
-                        <option value="tram">🚊 Tram</option>
-                        <option value="train">🚂 Treno</option>
-                    </select>
+            <!-- Lines Panel -->
+            <div id="panel-lines" class="active-tool-panel">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <h3>🚇 <span data-i18n="game.lines.title">Linee</span></h3>
+                    <button onclick="toggleDockPanel(null)"
+                        style="background:none; border:none; cursor:pointer;">❌</button>
                 </div>
-                <button class="tool-button" id="create-line-button" onclick="startCreatingLine()"
-                    style="background: rgba(156, 39, 176, 0.6);">
-                    ➕ <span data-i18n="game.lines.create">Crea Linea</span>
-                </button>
-                <div id="line-creation-controls" style="display: none; margin-top: 10px;">
-                    <button class="tool-button" id="confirm-line-button" onclick="confirmCreatingLine()"
-                        style="background: rgba(76, 175, 80, 0.6);">
-                        ✅ <span data-i18n="common.confirm">Conferma</span>
-                    </button>
-                    <button class="tool-button" id="cancel-line-button" onclick="cancelCreatingLine()"
-                        style="background: rgba(244, 67, 54, 0.6);">
-                        ❌ <span data-i18n="common.cancel">Annulla</span>
-                    </button>
+                <select id="line-type-select">
+                    <option value="metro">🚇 Metro</option>
+                    <option value="bus">🚌 Bus</option>
+                    <option value="tram">🚊 Tram</option>
+                    <option value="train">🚂 Treno</option>
+                </select>
+                <div style="display:flex; gap:10px;">
+                    <button class="btn-primary" style="flex:1;" id="create-line-button" onclick="startCreatingLine()">➕
+                        Crea Linea</button>
+                    <button class="btn-primary" style="flex:1; background:var(--success-color); display:none;"
+                        id="confirm-line-button" onclick="confirmCreatingLine()">✅ Conferma</button>
+                    <button class="btn-primary" style="flex:1; background:var(--danger-color); display:none;"
+                        id="cancel-line-button" onclick="cancelCreatingLine()">❌ Annulla</button>
                 </div>
-                <div id="line-creation-info"
-                    style="display: none; margin-top: 15px; padding: 10px; background: rgba(255, 255, 255, 0.5); border-radius: 10px; color: #2c3e50; font-size: 0.9em; border: 1px solid rgba(255, 255, 255, 0.7);">
-                    <div id="line-creation-status" data-i18n="game.lines.clickStations">👆 Clicca sulle stazioni per
-                        creare la linea</div>
+                <div id="line-creation-info" style="display:none; margin-top:10px; font-size:0.9em;">
+                    <div id="line-creation-status"></div>
                 </div>
-                <div id="metro-lines-list" style="margin-top: 15px; max-height: 200px; overflow-y: auto;">
-                    <!-- Le linee verranno aggiunte qui dinamicamente -->
+                <div id="metro-lines-list" style="margin-top: 15px; max-height: 200px; overflow-y: auto;"></div>
+            </div>
+
+            <!-- Stations List / Mod Panel -->
+            <div id="panel-stations" class="active-tool-panel">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <h3>🚉 <span data-i18n="game.stations.title">Stazioni</span></h3>
+                    <button onclick="toggleDockPanel(null)"
+                        style="background:none; border:none; cursor:pointer;">❌</button>
                 </div>
 
-                <h3 style="margin-top: 20px;">🗺️ <span data-i18n="game.pathfinding.title">Pathfinding</span></h3>
-                <button class="tool-button" id="pathfinding-button" onclick="togglePathfinding()">
-                    🔍 <span data-i18n="game.pathfinding.find">Trova Percorso</span>
-                </button>
+                <!-- Mod Injection Point -->
+                <div id="stations-info">
+                    <div
+                        style="padding:10px; background:rgba(255,255,255,0.5); border-radius:10px; margin-bottom:10px;">
+                        <div>Caricate: <strong id="stations-count">0</strong></div>
+                        <div id="stations-breakdown" style="font-size:0.85em; color:#666; margin-top:5px;">
+                            <span id="stations-train">0</span> Treno • <span id="stations-bus">0</span> Bus • <span
+                                id="stations-tram">0</span> Tram
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pathfinding Panel -->
+            <div id="panel-path" class="active-tool-panel">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <h3>🗺️ Pathfinding</h3>
+                    <button onclick="toggleDockPanel(null)"
+                        style="background:none; border:none; cursor:pointer;">❌</button>
+                </div>
+                <button class="btn-primary" style="width:100%;" id="pathfinding-button" onclick="togglePathfinding()">🔍
+                    Trova Percorso</button>
                 <div id="pathfinding-info"
-                    style="display: none; margin-top: 15px; padding: 10px; background: rgba(255, 255, 255, 0.5); border-radius: 10px; color: #2c3e50; font-size: 0.9em; border: 1px solid rgba(255, 255, 255, 0.7);">
-                    <div id="pathfinding-status" data-i18n="game.pathfinding.clickStart">👆 Clicca su una stazione di
-                        partenza</div>
-                </div>
-
-                <div class="info-panel" style="margin-top: 20px;">
-                    <div>🖱️ <span data-i18n="game.info.position">Posizione</span>: <span id="mousePos">-</span></div>
+                    style="display:none; margin-top:10px; padding:10px; background:rgba(255,255,255,0.5); border-radius:10px;">
+                    <div id="pathfinding-status"></div>
                 </div>
             </div>
 
-            <div class="map-container">
-                <div id="map"></div>
-                <!-- Pannello filtri stazioni -->
-                <div class="station-filter-panel">
-                    <h4>🔍 Filtri Stazioni</h4>
-                    <div class="filter-icon train active" id="filter-train" onclick="toggleStationFilter('train')"
-                        title="Mostra/Nascondi Stazioni Treno/Metro">
-                        🚉
-                    </div>
-                    <div class="filter-icon bus active" id="filter-bus" onclick="toggleStationFilter('bus')"
-                        title="Mostra/Nascondi Stazioni Bus">
-                        🚌
-                    </div>
-                    <div class="filter-icon tram active" id="filter-tram" onclick="toggleStationFilter('tram')"
-                        title="Mostra/Nascondi Stazioni Tram">
-                        🚊
-                    </div>
-                </div>
-            </div>
 
-            <!-- Pannello destra -->
-            <div class="tools-panel-right">
-                <h3>🚗 <span data-i18n="game.vehicles.title">Veicoli</span></h3>
-                <div style="margin-bottom: 10px;">
-                    <select id="vehicle-type-select"
-                        style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.8); background: rgba(255, 255, 255, 0.6); color: #2c3e50; font-weight: 600;">
-                        <option value="bus">🚌 Bus</option>
-                        <option value="tram">🚊 Tram</option>
-                        <option value="metro">🚇 Metro</option>
-                        <option value="train">🚂 Treno</option>
-                    </select>
+            <!-- MAIN DOCK ICONS -->
+            <div class="bottom-dock">
+                <div class="dock-item" onclick="toggleDockPanel('panel-build')" title="Strumenti Costruzione">
+                    <div class="dock-icon">🛠️</div>
+                    <div class="dock-label">Costruisci</div>
                 </div>
-                <button class="tool-button" id="add-vehicle-button" onclick="addVehicle()">
-                    ➕ <span data-i18n="game.vehicles.add">Aggiungi Veicolo</span>
-                </button>
-                <button class="tool-button" id="start-vehicles-button" onclick="startVehicles()"
-                    style="background: rgba(76, 175, 80, 0.6);">
-                    ▶️ <span data-i18n="game.vehicles.start">Avvia Veicoli</span>
-                </button>
-                <button class="tool-button" id="stop-vehicles-button" onclick="stopVehicles()"
-                    style="background: rgba(244, 67, 54, 0.6);">
-                    ⏹️ <span data-i18n="game.vehicles.stop">Ferma Veicoli</span>
-                </button>
-                <button class="tool-button" id="delete-vehicle-button" onclick="deleteVehicle()"
-                    style="background: rgba(244, 67, 54, 0.6); margin-top: 10px;">
-                    🗑️ <span data-i18n="game.vehicles.delete">Elimina Veicolo</span>
-                </button>
-                <div id="vehicles-info"
-                    style="margin-top: 15px; padding: 10px; background: rgba(255, 255, 255, 0.5); border-radius: 10px; color: #2c3e50; font-size: 0.9em; border: 1px solid rgba(255, 255, 255, 0.7);">
-                    <div>🚗 <span data-i18n="game.vehicles.total">Veicoli totali</span>: <span
-                            id="vehicles-count">0</span></div>
-                    <div style="margin-top: 5px; font-size: 0.85em; color: rgba(44, 62, 80, 0.7);">
-                        <div>🚌 Bus: <span id="buses-count">0</span></div>
-                        <div>🚊 Tram: <span id="trams-count">0</span></div>
-                        <div>🚇 Metro: <span id="metros-count">0</span></div>
-                        <div>🚂 Treni: <span id="trains-count">0</span></div>
-                    </div>
+                <div class="dock-item" onclick="toggleDockPanel('panel-lines')" title="Gestione Linee">
+                    <div class="dock-icon">🚇</div>
+                    <div class="dock-label">Linee</div>
                 </div>
-
-                <div class="time-controls" style="margin-top: 20px;">
-                    <h4>⏱️ <span data-i18n="game.time.title">Velocità Simulazione</span></h4>
-                    <div class="time-buttons">
-                        <button class="time-button" id="time-pause" onclick="setSimulationSpeed(0)">⏸️</button>
-                        <button class="time-button active" id="time-0.5x"
-                            onclick="setSimulationSpeed(0.5)">0.5x</button>
-                        <button class="time-button active" id="time-1x" onclick="setSimulationSpeed(1)">1x</button>
-                        <button class="time-button" id="time-2x" onclick="setSimulationSpeed(2)">2x</button>
-                        <button class="time-button" id="time-4x" onclick="setSimulationSpeed(4)">4x</button>
-                    </div>
-                    <div style="margin-top: 10px; color: #2c3e50; font-size: 0.9em;">
-                        ⏰ <span data-i18n="game.time.time">Tempo</span>: <span id="simulation-time">00:00:00</span>
-                    </div>
+                <div class="dock-item" onclick="toggleDockPanel('panel-stations')" title="Info Stazioni e Mod">
+                    <div class="dock-icon">🚉</div>
+                    <div class="dock-label">Stazioni</div>
+                </div>
+                <div class="dock-item" onclick="toggleDockPanel('panel-path')" title="Trova Percorso">
+                    <div class="dock-icon">🗺️</div>
+                    <div class="dock-label">Percorsi</div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Overlay per il caricamento iniziale -->
+    <!-- Initial Loading Overlay -->
+    <div id="loadOverlay" class="load-overlay hidden">
+        <div class="load-card">
+            <h2>🚇 Trasporti v3.3</h2>
+            <p>Caricamento mappe e salvataggi...</p>
+            <div id="save-list-container" style="max-height: 300px; overflow-y: auto;"></div>
+            <button class="load-button"
+                onclick="document.getElementById('loadOverlay').classList.add('hidden'); startNewGame();">
+                🆕 Nuova Partita
+            </button>
+        </div>
     </div>
-    </div>
-    </div>
+
+    <!-- UI Logic Script -->
+    <script>
+        function toggleDockPanel(panelId) {
+            // Hide all first
+            document.querySelectorAll('.active-tool-panel').forEach(el => {
+                el.classList.remove('visible');
+            });
+            // Show requested if not null
+            if (panelId) {
+                const panel = document.getElementById(panelId);
+                if (panel) {
+                    panel.classList.add('visible');
+                }
+            }
+        }
+    </script>
+
 
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -1707,10 +1400,8 @@
 
             // Converti le chiavi in punti
             pathKeys.forEach(key => {
-                const neighbors = graph.get(key);
-                if (neighbors && neighbors.length > 0) {
-                    path.push(neighbors[0].point);
-                }
+                const [lat, lng] = key.split(',').map(Number);
+                path.push({ lat, lng });
             });
 
             path.unshift([startStation.lat, startStation.lng]);
